@@ -238,8 +238,16 @@ main section h2 {
   font-weight: 600;
 }
 
-.notify-toggle {
-  align-self: center;
+.transition-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.notify-toggle,
+.share-toggle {
   font-size: 0.85rem;
   padding: 0.4rem 0.8rem;
 }

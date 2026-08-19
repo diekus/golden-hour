@@ -135,3 +135,42 @@ export function toLocation(searchResult) {
     source: 'search',
   };
 }
+
+function isValidTimezone(tz) {
+  try {
+    // Throws a RangeError for any string that isn't a recognisable IANA zone.
+    new Intl.DateTimeFormat(undefined, { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Parses a shared link's location back out of the URL (see js/share.js for the writer side).
+// Requires both lat and lng to be present and in range — a partial/malformed location is
+// treated as no location at all (null) rather than rendering with missing data. tz/label are
+// best-effort: an invalid/missing timezone falls back to the device's own, and a missing label
+// falls back to a generic placeholder, so a valid lat/lng pair is never discarded over those.
+export function locationFromSearchParams(search) {
+  const params = new URLSearchParams(search);
+  // Number(null) is 0, not NaN — without the has() checks, a page load with no query string at
+  // all (the overwhelming common case) would silently parse as a "valid" {lat: 0, lng: 0} shared
+  // location and override the cached/default one on every single visit.
+  if (!params.has('lat') || !params.has('lng')) return null;
+
+  const lat = Number(params.get('lat'));
+  const lng = Number(params.get('lng'));
+  if (!Number.isFinite(lat) || lat < -90 || lat > 90) return null;
+  if (!Number.isFinite(lng) || lng < -180 || lng > 180) return null;
+
+  const tzParam = params.get('tz');
+  const timezone = tzParam && isValidTimezone(tzParam) ? tzParam : deviceTimezone();
+
+  return {
+    lat,
+    lng,
+    label: params.get('label') || 'Shared location',
+    timezone,
+    source: 'shared-link',
+  };
+}
