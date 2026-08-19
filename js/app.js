@@ -322,8 +322,18 @@ function formatSummary(transitionWindow, now) {
   return `${nextLabel} starts in ${until}.`;
 }
 
+// Tracks the segment that opened the popover, so focus can return to it on close — role="dialog"
+// implies that contract (focus moves in on open, returns to the trigger on close), which the
+// original implementation didn't honour. Still valid at hidePopover() time even after a periodic
+// re-render: renderTransition() always calls hidePopover() *before* rebuilding the diagram's DOM,
+// so this reference isn't yet stale when it's read.
+let popoverTriggerEl = null;
+
 function hidePopover() {
+  const wasVisible = !els.popover.hidden;
   els.popover.hidden = true;
+  if (wasVisible) popoverTriggerEl?.focus();
+  popoverTriggerEl = null;
 }
 
 function showPopover(segment, event) {
@@ -338,8 +348,10 @@ function showPopover(segment, event) {
   els.popoverEnd.textContent = formatter.format(segment.end);
   els.popoverProgress.textContent = `${percent}%`;
 
+  popoverTriggerEl = event.currentTarget;
   els.popover.hidden = false;
   positionPopover(event);
+  els.popoverClose.focus();
 }
 
 function positionPopover(event) {

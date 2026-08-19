@@ -27,6 +27,11 @@
     --color-text: #14161a;
     --color-text-muted: #55575c;
     --color-blue: #3d5ea8;
+    /* The dark-theme gold (#e8a33d) only reaches ~2:1 against this theme's light background/
+       surface — well under WCAG 1.4.11's 3:1 minimum for a graphical object (the diagram's gold
+       segment) and a UI component boundary (the golden-hour cards' left border). This darker
+       gold clears both at ~4.1:1/4.4:1 while staying in the same amber hue family. */
+    --color-golden: #a86a12;
   }
 }
 
@@ -176,6 +181,19 @@ main {
   display: flex;
   flex-direction: column;
   gap: 2rem;
+}
+
+/* A modest widening for tablet/desktop viewports — not a structural column reflow (that's
+   Phase 11's territory), just a more generous reading measure than the mobile-first 36rem once
+   there's clearly room for it. */
+@media (min-width: 48rem) {
+  main {
+    max-width: 42rem;
+  }
+
+  .transition-diagram {
+    max-width: 26rem;
+  }
 }
 
 .offline-indicator {
