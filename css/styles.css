@@ -68,6 +68,28 @@ main section h2 {
   letter-spacing: 0.04em;
 }
 
+#transition-section {
+  gap: 0.4rem;
+}
+
+.transition-diagram {
+  width: 100%;
+  max-width: 22rem;
+  margin: 0 auto;
+}
+
+.transition-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.transition-summary {
+  margin: 0;
+  text-align: center;
+  font-size: 1rem;
+}
+
 #location-section {
   gap: 0.6rem;
 }

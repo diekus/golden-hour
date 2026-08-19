@@ -1,4 +1,6 @@
 import { getLightTimes } from './light-times.js';
+import { getTransitionWindow } from './transition-window.js';
+import { renderTransitionDiagram } from './transition-diagram.js';
 import './components/light-window-card.js';
 import {
   DEFAULT_LOCATION,
@@ -24,7 +26,12 @@ const els = {
   searchInput: document.getElementById('location-search-input'),
   results: document.getElementById('location-results'),
   message: document.getElementById('location-message'),
+  transitionDiagram: document.getElementById('transition-diagram'),
+  transitionSummary: document.getElementById('transition-summary'),
 };
+
+const TRANSITION_REFRESH_MS = 30 * 1000;
+const KIND_LABEL = { blue: 'Blue hour', gold: 'Golden hour' };
 
 const GEOLOCATION_ERROR_MESSAGES = {
   denied: 'Location access was denied. You can search for a city instead.',
@@ -78,11 +85,44 @@ function renderLightTimes() {
     windowCardData('Blue hour — evening', 'blue', times.blueHourEvening, tz);
 }
 
+function formatCountdown(ms) {
+  const totalMinutes = Math.max(0, Math.round(ms / 60000));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours === 0) return `${minutes} min`;
+  if (minutes === 0) return `${hours} h`;
+  return `${hours} h ${minutes} min`;
+}
+
+function formatSummary(transitionWindow, now) {
+  if (!transitionWindow) return '';
+  const { currentKind, nextTransition } = transitionWindow;
+
+  if (currentKind === 'blue' || currentKind === 'gold') {
+    if (!nextTransition) return `${KIND_LABEL[currentKind]} right now.`;
+    const remaining = formatCountdown(nextTransition.at.getTime() - now.getTime());
+    return `${KIND_LABEL[currentKind]} — ${remaining} left.`;
+  }
+
+  if (!nextTransition) return "Golden and blue hour aren't active right now.";
+  const nextLabel = KIND_LABEL[nextTransition.toKind] || 'Golden/blue hour';
+  const until = formatCountdown(nextTransition.at.getTime() - now.getTime());
+  return `${nextLabel} starts in ${until}.`;
+}
+
+function renderTransition() {
+  const now = new Date();
+  const transitionWindow = getTransitionWindow(currentLocation.lat, currentLocation.lng, now);
+  renderTransitionDiagram(els.transitionDiagram, transitionWindow);
+  els.transitionSummary.textContent = formatSummary(transitionWindow, now);
+}
+
 function setLocation(location) {
   currentLocation = location;
   setCachedLocation(location);
   els.locationLabel.textContent = location.label;
   renderLightTimes();
+  renderTransition();
   showMessage('');
   clearResults();
 }
@@ -134,3 +174,5 @@ els.searchForm.addEventListener('submit', async (event) => {
 
 els.locationLabel.textContent = currentLocation.label;
 renderLightTimes();
+renderTransition();
+setInterval(renderTransition, TRANSITION_REFRESH_MS);
