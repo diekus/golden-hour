@@ -59,7 +59,7 @@ Golden hour/blue hour/sunrise/sunset timing is calculable entirely offline once 
 Evaluated against the app's actual functionality:
 
 - **Web Share API** — recommended. Lets a user share "golden hour today: 6:42–7:18pm" with one tap; directly useful for the target audience (e.g. sharing a shoot time with a client or crew).
-- **Shortcuts** (manifest `shortcuts`) — recommended. A home-screen long-press shortcut straight to "today's golden hour" fits a utility app that's opened quickly and often.
+- **Shortcuts** (manifest `shortcuts`) — reconsidered and skipped in Phase 8 (`specs/2026-08-19-installability-polish/requirements.md`). Golden Hour is a genuine single-view utility that already opens straight to "today's golden hour" — a shortcut to the same screen the app already launches to adds a manifest entry without adding real value. Revisit if a second action/view is ever added (e.g. Phase 9's Web Share could justify one).
 - **`launch_handler`** — recommended, set to focus the existing window rather than spawning duplicates, since this is a single-view utility.
 - **Periodic Background Sync** — recommended, best-effort only, to attempt golden/blue hour notifications when the app is closed. See "Notifications" above for its limitations.
 - **Badging, protocol handling, file handling, Web Share Target, URL handling, device posture** — not applicable. Golden Hour has no incoming files/protocols to handle, no persistent count to badge, and is a single-screen app with no meaningful cross-app share-target or URL-routing use case. Revisit only if scope changes.
