@@ -35,6 +35,61 @@ body {
   font-family: var(--font-sans);
 }
 
+/* Ambient background: physically gold/blue during the actual hour, with a livelier pulse;
+   a fainter neutral pulse during the 20-minute run-up/run-down either side; nothing at all
+   the rest of the time. Driven by body[data-ambient], set in js/app.js. Layered behind all
+   content via a fixed, negative-z-index pseudo-element so it never affects text contrast on
+   the opaque cards sitting above it. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(ellipse 120% 65% at 50% -5%, var(--ambient-color, var(--color-text-muted)), transparent 70%);
+}
+
+body[data-ambient]::before {
+  animation: ambient-pulse 9s ease-in-out infinite alternate;
+}
+
+body[data-ambient="active"] {
+  --ambient-color: var(--color-text-muted);
+  --ambient-min: 0.05;
+  --ambient-max: 0.13;
+}
+
+body[data-ambient="gold"] {
+  --ambient-color: var(--color-golden);
+  --ambient-min: 0.18;
+  --ambient-max: 0.36;
+}
+
+body[data-ambient="blue"] {
+  --ambient-color: var(--color-blue);
+  --ambient-min: 0.18;
+  --ambient-max: 0.36;
+}
+
+@keyframes ambient-pulse {
+  0% {
+    opacity: var(--ambient-min);
+    transform: scale(1) translateY(0);
+  }
+  100% {
+    opacity: var(--ambient-max);
+    transform: scale(1.12) translateY(1.5%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-ambient]::before {
+    animation: none;
+    opacity: var(--ambient-max);
+  }
+}
+
 header {
   text-align: center;
   padding: 1.5rem 1rem 0.5rem;

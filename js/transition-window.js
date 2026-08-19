@@ -91,5 +91,19 @@ export function getTransitionWindow(lat, lng, now = new Date()) {
   ];
   const nextTransition = boundaries.find((boundary) => boundary.at > now) || null;
 
-  return { windowStart, windowEnd, segments, nowFraction, direction: combined.direction, currentKind, nextTransition };
+  // Distinct from nowFraction (which is clamped to [0, 1] for marker placement) — this tells
+  // the caller whether "now" is genuinely inside the padded window at all, e.g. for deciding
+  // whether to show any background ambience effect vs. none when the window is far away.
+  const isWithinWindow = now >= windowStart && now <= windowEnd;
+
+  return {
+    windowStart,
+    windowEnd,
+    segments,
+    nowFraction,
+    direction: combined.direction,
+    currentKind,
+    nextTransition,
+    isWithinWindow,
+  };
 }

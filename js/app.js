@@ -162,12 +162,33 @@ function timeFormatterFor(timezone) {
   return new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: timezone });
 }
 
+// Physically gold/blue during the actual hour; a fainter neutral "anticipation" pulse during
+// the 20-minute padding either side; fully static/default once we're well away from any
+// transition. Kept in sync with the same transitionWindow the diagram itself renders from.
+function updateAmbient(transitionWindow) {
+  let ambient = null;
+  if (transitionWindow) {
+    if (transitionWindow.currentKind === 'blue' || transitionWindow.currentKind === 'gold') {
+      ambient = transitionWindow.currentKind;
+    } else if (transitionWindow.isWithinWindow) {
+      ambient = 'active';
+    }
+  }
+
+  if (ambient) {
+    document.body.dataset.ambient = ambient;
+  } else {
+    delete document.body.dataset.ambient;
+  }
+}
+
 function renderTransition() {
   hidePopover();
   const now = new Date();
   const transitionWindow = getTransitionWindow(currentLocation.lat, currentLocation.lng, now);
   renderTransitionDiagram(els.transitionDiagram, transitionWindow, currentLocation.timezone, showPopover);
   els.transitionSummary.textContent = formatSummary(transitionWindow, now);
+  updateAmbient(transitionWindow);
 }
 
 function setLocation(location) {
