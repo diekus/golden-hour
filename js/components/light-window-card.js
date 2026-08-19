@@ -33,10 +33,27 @@ function formatDuration(ms) {
   return `${hours} h ${minutes} min`;
 }
 
+// Small flat-design icons, built from basic shapes rather than hand-drawn paths so their
+// geometry stays easy to reason about. Decorative only (aria-hidden) — the text alongside
+// them already carries the actual information, so a screen reader just reads the numbers.
+const CLOUD_ICON = `
+  <svg viewBox="0 0 20 14" width="14" height="10" aria-hidden="true" focusable="false" class="weather-icon">
+    <circle cx="6" cy="8.5" r="3.6" />
+    <circle cx="11" cy="5.8" r="5" />
+    <circle cx="15.2" cy="8.3" r="3.4" />
+    <rect x="3.2" y="8" width="13.6" height="4.2" rx="2.1" />
+  </svg>
+`;
+const RAIN_ICON = `
+  <svg viewBox="0 0 12 16" width="10" height="13" aria-hidden="true" focusable="false" class="weather-icon">
+    <path d="M6 1 C8 5 10.5 8.8 10.5 11 A4.5 4.5 0 1 1 1.5 11 C1.5 8.8 4 5 6 1 Z" />
+  </svg>
+`;
+
 function formatWeather(weather) {
   if (!weather) return '';
   const suffix = weather.stale ? ' (may be outdated)' : '';
-  return `Cloud ${weather.cloudCover}% · Rain ${weather.precipProbability}%${suffix}`;
+  return `${CLOUD_ICON}<span>${weather.cloudCover}%</span> · ${RAIN_ICON}<span>${weather.precipProbability}%${suffix}</span>`;
 }
 
 const ACCENT_VAR = {
@@ -78,7 +95,7 @@ class LightWindowCard extends HTMLElement {
           <span class="time">${formatTime(start?.time, timezone)}</span>
           <span class="reading">${formatReading(start)}</span>
         </div>
-        <div class="arrow" aria-hidden="true">↓</div>
+        <div class="connector" aria-hidden="true"></div>
         <div class="row">
           <span class="time">${formatTime(end?.time, timezone)}</span>
           <span class="reading">${formatReading(end)}</span>
@@ -127,11 +144,12 @@ class LightWindowCard extends HTMLElement {
           font-size: 0.8rem;
           color: var(--color-text-muted);
         }
-        .arrow {
-          text-align: center;
-          color: var(--color-text-muted);
-          font-size: 0.75rem;
-          line-height: 1.4;
+        .connector {
+          width: 1px;
+          height: 0.65rem;
+          margin: 0.15rem 0 0.15rem 1px;
+          background: var(--color-text-muted);
+          opacity: 0.5;
         }
         .duration {
           margin: 0.3rem 0 0;
@@ -140,8 +158,16 @@ class LightWindowCard extends HTMLElement {
         }
         .weather {
           margin: 0.3rem 0 0;
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 0.3rem;
           font-size: 0.8rem;
           color: var(--color-text-muted);
+        }
+        .weather-icon {
+          flex-shrink: 0;
+          fill: currentColor;
         }
       </style>
       <article class="card">

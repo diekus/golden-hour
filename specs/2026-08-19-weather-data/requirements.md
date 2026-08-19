@@ -1,5 +1,7 @@
 # Requirements — Phase 4: Weather data
 
+> **Amendment (2026-08-19, later):** the "Presentation" decision below (plain text, no icons) was subsequently reversed on direct request — small decorative SVG icons (cloud, raindrop) were added alongside the cloud/precipitation numbers. They're `aria-hidden`, not emoji, so the specific screen-reader concern noted below doesn't apply to them; the numeric text still carries the actual information. See the UI-refinement commit after Phase 6.
+
 ## Scope
 
 Per `specs/roadmap.md` Phase 4: integrate the Open-Meteo Forecast API to pull cloud cover and precipitation data for the golden/blue hour windows. This phase shows the raw numbers only — turning them into a plain-language warning is explicitly Phase 5's job, not this one.

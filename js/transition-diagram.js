@@ -79,6 +79,33 @@ function boundaryLabels(transitionWindow, timezone) {
   });
 }
 
+const SUN_ICON_RADIUS = 9;
+
+// A small sunrise/sunset badge (horizon line + sun + rays) placed on the arc at the actual
+// sunrise/sunset instant — the sun-on-the-horizon moment itself, distinct from the golden/blue
+// hour boundaries already marked by text labels. Same glyph for both events; which one it is
+// is already clear from which half of the arc it sits on and the "Right now" summary text.
+function sunEventMarkup(transitionWindow) {
+  const { windowStart, windowEnd, sunEvent } = transitionWindow;
+  if (!sunEvent) return '';
+
+  const totalMs = windowEnd.getTime() - windowStart.getTime();
+  const fraction = fractionOf(sunEvent.time, windowStart, totalMs);
+  const { x, y } = pointAt(fraction, RADIUS);
+  const r = SUN_ICON_RADIUS;
+
+  return `
+    <g transform="translate(${x.toFixed(2)}, ${y.toFixed(2)})" class="transition-sun-icon">
+      <circle r="${r + 1.5}" fill="var(--color-surface)" opacity="0.9" />
+      <line x1="${-r * 0.65}" y1="0" x2="${r * 0.65}" y2="0" />
+      <path d="M ${-r * 0.5} 0 A ${r * 0.5} ${r * 0.5} 0 0 1 ${r * 0.5} 0" fill="none" />
+      <line x1="0" y1="${-r * 0.9}" x2="0" y2="${-r * 0.6}" />
+      <line x1="${-r * 0.6}" y1="${-r * 0.6}" x2="${-r * 0.4}" y2="${-r * 0.4}" />
+      <line x1="${r * 0.6}" y1="${-r * 0.6}" x2="${r * 0.4}" y2="${-r * 0.4}" />
+    </g>
+  `;
+}
+
 function segmentMarkup(segment, index, windowStart, totalMs, interactive) {
   const d = segmentPath(segment, windowStart, totalMs);
   if (!d) return '';
@@ -120,6 +147,7 @@ export function renderTransitionDiagram(container, transitionWindow, timezone, o
   container.innerHTML = `
     <svg viewBox="0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}" aria-hidden="true" class="transition-svg">
       ${segmentsMarkup}
+      ${sunEventMarkup(transitionWindow)}
       ${labelsMarkup}
       <circle cx="${marker.x.toFixed(2)}" cy="${marker.y.toFixed(2)}" r="${MARKER_RADIUS}" fill="var(--color-surface)" stroke="${markerColor}" stroke-width="3" />
     </svg>
