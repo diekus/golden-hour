@@ -221,6 +221,39 @@ for (const id of Object.values(CARD_ID_BY_KIND_DIRECTION).flatMap((byDirection) 
 
 let featuredCardId = null;
 
+function prefersReducedMotion() {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+// FLIP (First, Last, Invert, Play): captures el's on-screen position before moveFn runs it
+// through a DOM relocation, then animates from that position to wherever moveFn actually put
+// it — turns what would otherwise be an instant, disorienting snap into a visible slide.
+// moveFn should perform the DOM move AND any accompanying data/style update together, so the
+// "last" position reflects the element's true final appearance (e.g. the featured badge's
+// extra line), not a transient in-between state.
+function flipMove(el, moveFn) {
+  if (prefersReducedMotion()) {
+    moveFn();
+    return;
+  }
+
+  const first = el.getBoundingClientRect();
+  moveFn();
+  const last = el.getBoundingClientRect();
+  const dx = first.left - last.left;
+  const dy = first.top - last.top;
+  if (dx === 0 && dy === 0) return;
+
+  el.style.transition = 'none';
+  el.style.transform = `translate(${dx}px, ${dy}px)`;
+  el.getBoundingClientRect(); // force layout so the inverted position commits before animating away from it
+  requestAnimationFrame(() => {
+    el.style.transition = 'transform 0.4s ease';
+    el.style.transform = '';
+  });
+  el.addEventListener('transitionend', () => { el.style.transition = ''; }, { once: true });
+}
+
 // Physically relocates the currently-active card into #featured-section, right under the
 // diagram, with a strong colour fill (light-window-card's `featured` flag) — rather than
 // cloning/mirroring its data into a separate element, which would risk the two falling out of
@@ -232,17 +265,21 @@ function updateFeaturedCard(transitionWindow) {
   if (featuredCardId) {
     const prevEl = document.getElementById(featuredCardId);
     const home = cardHome[featuredCardId];
-    home.parent.insertBefore(prevEl, home.nextSibling);
-    prevEl.data = { ...prevEl.data, featured: false };
+    flipMove(prevEl, () => {
+      home.parent.insertBefore(prevEl, home.nextSibling);
+      prevEl.data = { ...prevEl.data, featured: false };
+    });
   }
 
   featuredCardId = nextId;
 
   if (featuredCardId) {
     const el = document.getElementById(featuredCardId);
-    els.featuredSection.appendChild(el);
     els.featuredSection.hidden = false;
-    el.data = { ...el.data, featured: true };
+    flipMove(el, () => {
+      els.featuredSection.appendChild(el);
+      el.data = { ...el.data, featured: true };
+    });
   } else {
     els.featuredSection.hidden = true;
   }
@@ -329,9 +366,18 @@ function formatSummary(transitionWindow, now) {
 // so this reference isn't yet stale when it's read.
 let popoverTriggerEl = null;
 
+// Visibility is class-driven, not the hidden attribute — see css/styles.css's
+// .transition-popover comment for why (the hidden attribute's UA `display: none !important`
+// would fight the animated display transition).
+const POPOVER_OPEN_CLASS = 'transition-popover--open';
+
+function isPopoverOpen() {
+  return els.popover.classList.contains(POPOVER_OPEN_CLASS);
+}
+
 function hidePopover() {
-  const wasVisible = !els.popover.hidden;
-  els.popover.hidden = true;
+  const wasVisible = isPopoverOpen();
+  els.popover.classList.remove(POPOVER_OPEN_CLASS);
   if (wasVisible) popoverTriggerEl?.focus();
   popoverTriggerEl = null;
 }
@@ -349,7 +395,7 @@ function showPopover(segment, event) {
   els.popoverProgress.textContent = `${percent}%`;
 
   popoverTriggerEl = event.currentTarget;
-  els.popover.hidden = false;
+  els.popover.classList.add(POPOVER_OPEN_CLASS);
   positionPopover(event);
   els.popoverClose.focus();
 }
@@ -555,11 +601,11 @@ els.searchForm.addEventListener('submit', async (event) => {
 els.popoverClose.addEventListener('click', hidePopover);
 
 document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && !els.popover.hidden) hidePopover();
+  if (event.key === 'Escape' && isPopoverOpen()) hidePopover();
 });
 
 document.addEventListener('click', (event) => {
-  if (els.popover.hidden) return;
+  if (!isPopoverOpen()) return;
   const clickedInsidePopover = els.popover.contains(event.target);
   const clickedASegment = event.target.classList?.contains('transition-segment--interactive');
   if (!clickedInsidePopover && !clickedASegment) hidePopover();

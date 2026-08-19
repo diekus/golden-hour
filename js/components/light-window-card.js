@@ -105,9 +105,16 @@ class LightWindowCard extends HTMLElement {
     // for contrast against them — --color-text/-muted are tuned for the neutral surface, not
     // for sitting on top of a saturated background.
     const isFeatured = Boolean(featured) && (accent === 'golden' || accent === 'blue');
-    const cardBg = isFeatured ? FEATURED_BG_VAR[accent] : 'var(--color-surface)';
+    // Two background declarations, not one: color-mix()-based gradients aren't supported by
+    // every browser, so the flat fallback is declared first and the gradient after it — an
+    // unsupported browser's parser drops the invalid second line and keeps the flat colour,
+    // rather than being left with no background at all.
+    const cardBackground = isFeatured
+      ? `background: ${FEATURED_BG_VAR[accent]};
+         background: linear-gradient(145deg, color-mix(in srgb, white 14%, ${FEATURED_BG_VAR[accent]}), ${FEATURED_BG_VAR[accent]} 55%, color-mix(in srgb, black 12%, ${FEATURED_BG_VAR[accent]}));`
+      : 'background: var(--color-surface);';
     const cardBorder = isFeatured ? 'none' : `3px solid ${accentColor}`;
-    const cardShadow = isFeatured ? '0 0.5rem 1.5rem rgba(0, 0, 0, 0.22)' : 'none';
+    const cardShadow = isFeatured ? 'var(--shadow-md)' : 'var(--shadow-sm)';
     const textColor = isFeatured ? FEATURED_TEXT_VAR[accent] : 'var(--color-text)';
     const mutedColor = isFeatured ? FEATURED_MUTED_VAR[accent] : 'var(--color-text-muted)';
     const badgeMarkup = isFeatured ? '<p class="badge">Happening now</p>' : '';
@@ -141,7 +148,7 @@ class LightWindowCard extends HTMLElement {
         }
         .card {
           border-left: ${cardBorder};
-          background: ${cardBg};
+          ${cardBackground}
           box-shadow: ${cardShadow};
           border-radius: 0.5rem;
           padding: 0.75rem 1rem;
