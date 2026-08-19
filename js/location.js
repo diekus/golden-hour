@@ -1,5 +1,6 @@
 const STORAGE_KEY = 'golden-hour:location';
 const GEOCODE_URL = 'https://geocoding-api.open-meteo.com/v1/search';
+const REVERSE_GEOCODE_URL = 'https://nominatim.openstreetmap.org/reverse';
 
 // Same coordinates Phase 1 hardcoded, now shaped like every other location object.
 export const DEFAULT_LOCATION = {
@@ -41,6 +42,33 @@ function deviceTimezone() {
   return Intl.DateTimeFormat().resolvedOptions().timeZone;
 }
 
+function formatReverseLabel(address) {
+  const place = address.city || address.town || address.village || address.hamlet || address.county;
+  const parts = [place, address.state, address.country].filter(Boolean);
+  return parts.join(', ');
+}
+
+// Best-effort: turns GPS coordinates into a human-readable place name via Nominatim
+// (OpenStreetMap's free, keyless, CORS-enabled reverse geocoder). Returns null on any
+// failure — the caller falls back to a generic label rather than surfacing an error, since
+// this is a nice-to-have, not something the geolocation flow should ever block on.
+async function reverseGeocode(lat, lng) {
+  try {
+    const url = new URL(REVERSE_GEOCODE_URL);
+    url.searchParams.set('lat', lat);
+    url.searchParams.set('lon', lng);
+    url.searchParams.set('format', 'json');
+    url.searchParams.set('zoom', '10'); // city-level detail, not a full street address
+
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data.address ? formatReverseLabel(data.address) || null : null;
+  } catch {
+    return null;
+  }
+}
+
 export function resolveViaGeolocation() {
   return new Promise((resolve, reject) => {
     if (!('geolocation' in navigator)) {
@@ -48,11 +76,15 @@ export function resolveViaGeolocation() {
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        const label = (await reverseGeocode(lat, lng)) || 'Your location';
+
         resolve({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-          label: 'Your location',
+          lat,
+          lng,
+          label,
           timezone: deviceTimezone(),
           source: 'geolocation',
         });

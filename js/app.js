@@ -22,6 +22,7 @@ if ('serviceWorker' in navigator) {
 const els = {
   locationDetails: document.getElementById('location-details'),
   locationLabel: document.getElementById('location-label'),
+  locationDate: document.getElementById('location-date'),
   useMyLocationBtn: document.getElementById('use-my-location-btn'),
   searchForm: document.getElementById('location-search-form'),
   searchInput: document.getElementById('location-search-input'),
@@ -162,6 +163,16 @@ function timeFormatterFor(timezone) {
   return new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: timezone });
 }
 
+// The location's own current date, not the browser's — a distant location's calendar day can
+// genuinely differ from the viewer's (see the day-boundary-crossing note in Phase 2's spec).
+function renderLocationLabel() {
+  els.locationLabel.textContent = currentLocation.label;
+  els.locationDate.textContent = new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeZone: currentLocation.timezone,
+  }).format(new Date());
+}
+
 // Physically gold/blue during the actual hour; a fainter neutral "anticipation" pulse during
 // the 20-minute padding either side; fully static/default once we're well away from any
 // transition. Kept in sync with the same transitionWindow the diagram itself renders from.
@@ -189,12 +200,13 @@ function renderTransition() {
   renderTransitionDiagram(els.transitionDiagram, transitionWindow, currentLocation.timezone, showPopover);
   els.transitionSummary.textContent = formatSummary(transitionWindow, now);
   updateAmbient(transitionWindow);
+  renderLocationLabel(); // keeps the date correct across a midnight rollover in long-lived sessions
 }
 
 function setLocation(location) {
   currentLocation = location;
   setCachedLocation(location);
-  els.locationLabel.textContent = location.label;
+  renderLocationLabel();
   renderLightTimes();
   renderTransition();
   showMessage('');
@@ -264,7 +276,6 @@ document.addEventListener('click', (event) => {
 // user to set a real location; once one is saved, it stays collapsed on future visits.
 els.locationDetails.open = !cachedLocationAtLoad;
 
-els.locationLabel.textContent = currentLocation.label;
 renderLightTimes();
 renderTransition();
 setInterval(renderTransition, TRANSITION_REFRESH_MS);
