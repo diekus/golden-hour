@@ -1,4 +1,4 @@
-const CACHE_NAME = 'golden-hour-shell-v18';
+const CACHE_NAME = 'golden-hour-shell-v20';
 const APP_SHELL = [
   '/',
   '/index.html',

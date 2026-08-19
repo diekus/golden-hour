@@ -129,6 +129,46 @@ header h1 {
   height: auto;
 }
 
+/* Reclaims the desktop title-bar row for the logo on installs that support window-controls-overlay
+   (manifest display_override). Scoped entirely to this media query so every other context —
+   mobile, browser tab, unsupported desktop browsers — renders the header exactly as above,
+   satisfying the roadmap's "with fallback" requirement by construction. */
+@media (display-mode: window-controls-overlay) {
+  header {
+    position: fixed;
+    top: env(titlebar-area-y, 0);
+    left: env(titlebar-area-x, 0);
+    width: env(titlebar-area-width, 100%);
+    height: env(titlebar-area-height, 2.25rem);
+    padding: 0 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-bg);
+    -webkit-app-region: drag;
+    app-region: drag;
+    z-index: 10;
+  }
+
+  header h1 {
+    margin: 0;
+    line-height: 0;
+  }
+
+  .logo {
+    /* A fixed unit, not a percentage — percentage height can't resolve here since none of
+       header's descendants (h1 > picture > img) have a definite height of their own to
+       inherit from, so it would silently fall back to the image's natural, oversized height. */
+    width: auto;
+    height: 1.5rem;
+    max-width: 10rem;
+  }
+
+  main {
+    margin-top: env(titlebar-area-height, 2.25rem);
+  }
+}
+
 main {
   max-width: 36rem;
   margin: 0 auto;
