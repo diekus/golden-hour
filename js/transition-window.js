@@ -17,6 +17,7 @@ function combinedWindows(times) {
           firstKind: 'blue',
           secondKind: 'gold',
           direction: 'morning',
+          sunEvent: times.sunrise ? { time: times.sunrise.time, kind: 'sunrise' } : null,
         }
       : null,
     evening: eveningOk
@@ -27,6 +28,7 @@ function combinedWindows(times) {
           firstKind: 'gold',
           secondKind: 'blue',
           direction: 'evening',
+          sunEvent: times.sunset ? { time: times.sunset.time, kind: 'sunset' } : null,
         }
       : null,
   };
@@ -105,5 +107,6 @@ export function getTransitionWindow(lat, lng, now = new Date()) {
     currentKind,
     nextTransition,
     isWithinWindow,
+    sunEvent: combined.sunEvent,
   };
 }

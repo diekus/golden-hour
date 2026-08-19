@@ -21,11 +21,19 @@
     </h1>
   </header>
   <main>
+    <p id="offline-indicator" class="offline-indicator" role="status" hidden>
+      You're offline — showing cached data. Reconnect to change location or refresh weather.
+    </p>
+
     <section aria-labelledby="transition-heading" id="transition-section">
       <h2 id="transition-heading" class="visually-hidden">Right now</h2>
       <div id="transition-diagram" class="transition-diagram"></div>
       <p id="transition-summary" class="transition-summary" role="status"></p>
       <p id="weather-warning" class="weather-warning" role="status"></p>
+    </section>
+
+    <section aria-labelledby="featured-heading" id="featured-section" hidden>
+      <h2 id="featured-heading" class="visually-hidden">Currently active</h2>
     </section>
 
     <section aria-labelledby="location-heading" id="location-section">

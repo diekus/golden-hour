@@ -1,7 +1,7 @@
 import { getLightTimes } from './light-times.js';
 import { getTransitionWindow } from './transition-window.js';
 import { renderTransitionDiagram } from './transition-diagram.js';
-import { fetchForecast, averageForWindow } from './weather.js';
+import { fetchForecast, averageForWindow, getCachedForecast, setCachedForecast } from './weather.js';
 import './components/light-window-card.js';
 import {
   DEFAULT_LOCATION,
@@ -32,6 +32,8 @@ const els = {
   transitionDiagram: document.getElementById('transition-diagram'),
   transitionSummary: document.getElementById('transition-summary'),
   weatherWarning: document.getElementById('weather-warning'),
+  offlineIndicator: document.getElementById('offline-indicator'),
+  featuredSection: document.getElementById('featured-section'),
   popover: document.getElementById('transition-popover'),
   popoverClose: document.getElementById('transition-popover-close'),
   popoverTitle: document.getElementById('transition-popover-title'),
@@ -78,6 +80,15 @@ function windowCardData(label, accent, windowData, timezone) {
   };
 }
 
+// Preserves whatever `featured` state the card already had — updateFeaturedCard only re-applies
+// it when the *active card's identity* changes, so if this function's fresh windowCardData()
+// wiped it unconditionally, a still-featured card would lose its styling on any re-render
+// (e.g. a location switch) that doesn't happen to also change which window is active.
+function setWindowCard(id, label, accent, windowData, timezone) {
+  const card = document.getElementById(id);
+  card.data = { ...windowCardData(label, accent, windowData, timezone), featured: card.data?.featured };
+}
+
 function renderLightTimes() {
   const times = getLightTimes(currentLocation.lat, currentLocation.lng, new Date());
   const tz = currentLocation.timezone;
@@ -85,15 +96,10 @@ function renderLightTimes() {
   document.getElementById('card-sunrise').data = pointCardData('Sunrise', times.sunrise, tz);
   document.getElementById('card-sunset').data = pointCardData('Sunset', times.sunset, tz);
 
-  document.getElementById('card-golden-morning').data =
-    windowCardData('Golden hour — morning', 'golden', times.goldenHourMorning, tz);
-  document.getElementById('card-golden-evening').data =
-    windowCardData('Golden hour — evening', 'golden', times.goldenHourEvening, tz);
-
-  document.getElementById('card-blue-morning').data =
-    windowCardData('Blue hour — morning', 'blue', times.blueHourMorning, tz);
-  document.getElementById('card-blue-evening').data =
-    windowCardData('Blue hour — evening', 'blue', times.blueHourEvening, tz);
+  setWindowCard('card-golden-morning', 'Golden hour — morning', 'golden', times.goldenHourMorning, tz);
+  setWindowCard('card-golden-evening', 'Golden hour — evening', 'golden', times.goldenHourEvening, tz);
+  setWindowCard('card-blue-morning', 'Blue hour — morning', 'blue', times.blueHourMorning, tz);
+  setWindowCard('card-blue-evening', 'Blue hour — evening', 'blue', times.blueHourEvening, tz);
 
   return times;
 }
@@ -120,10 +126,15 @@ async function renderWeather(times, location) {
   weatherByWindow = {};
 
   let hourly = null;
+  let stale = false;
   try {
     hourly = await fetchForecast(location.lat, location.lng);
+    setCachedForecast(location.lat, location.lng, hourly);
   } catch {
-    hourly = null; // best-effort enhancement — cards simply show no weather line
+    // Fresh fetch failed (e.g. offline) — fall back to the last cached forecast, but only if
+    // it's for a location close enough to this one to plausibly still be relevant.
+    hourly = getCachedForecast(location.lat, location.lng);
+    stale = hourly !== null;
   }
 
   if (currentLocation !== location) return;
@@ -131,10 +142,11 @@ async function renderWeather(times, location) {
   for (const { id, window } of WEATHER_CARDS) {
     const card = document.getElementById(id);
     const windowData = times[window];
-    const weather =
+    const averaged =
       windowData.start && windowData.end
         ? averageForWindow(hourly, windowData.start.time, windowData.end.time)
         : null;
+    const weather = averaged ? { ...averaged, stale } : null;
     card.data = { ...card.data, weather };
     weatherByWindow[window] = weather;
   }
@@ -160,16 +172,69 @@ function resolveActiveWeatherWindow(transitionWindow) {
   return `${prefix}${suffix}`;
 }
 
+const CARD_ID_BY_KIND_DIRECTION = {
+  gold: { morning: 'card-golden-morning', evening: 'card-golden-evening' },
+  blue: { morning: 'card-blue-morning', evening: 'card-blue-evening' },
+};
+
+// Strictly "happening right now", unlike resolveActiveWeatherWindow above which also covers
+// "waiting for the next one" — the featured card only surfaces while a golden/blue hour is
+// actually in progress, not during the run-up to it.
+function activeCardId(transitionWindow) {
+  if (!transitionWindow) return null;
+  const { currentKind, direction } = transitionWindow;
+  if (currentKind !== 'gold' && currentKind !== 'blue') return null;
+  return CARD_ID_BY_KIND_DIRECTION[currentKind][direction];
+}
+
+// Where each golden/blue-hour card normally lives, captured once at startup so it can be
+// moved back exactly where it came from when it's no longer the active one.
+const cardHome = {};
+for (const id of Object.values(CARD_ID_BY_KIND_DIRECTION).flatMap((byDirection) => Object.values(byDirection))) {
+  const el = document.getElementById(id);
+  cardHome[id] = { parent: el.parentElement, nextSibling: el.nextElementSibling };
+}
+
+let featuredCardId = null;
+
+// Physically relocates the currently-active card into #featured-section, right under the
+// diagram, with a strong colour fill (light-window-card's `featured` flag) — rather than
+// cloning/mirroring its data into a separate element, which would risk the two falling out of
+// sync. Moves it back to its original position the moment it stops being the active one.
+function updateFeaturedCard(transitionWindow) {
+  const nextId = activeCardId(transitionWindow);
+  if (nextId === featuredCardId) return;
+
+  if (featuredCardId) {
+    const prevEl = document.getElementById(featuredCardId);
+    const home = cardHome[featuredCardId];
+    home.parent.insertBefore(prevEl, home.nextSibling);
+    prevEl.data = { ...prevEl.data, featured: false };
+  }
+
+  featuredCardId = nextId;
+
+  if (featuredCardId) {
+    const el = document.getElementById(featuredCardId);
+    els.featuredSection.appendChild(el);
+    els.featuredSection.hidden = false;
+    el.data = { ...el.data, featured: true };
+  } else {
+    els.featuredSection.hidden = true;
+  }
+}
+
 const CLOUD_CAUTION = 40;
 const CLOUD_WARNING = 80;
 const PRECIP_CAUTION = 20;
 const PRECIP_WARNING = 50;
 
 // Pure interpretation layer over Phase 4's raw numbers — no fetching, no averaging, just
-// turning { cloudCover, precipProbability } into a plain-language status.
+// turning { cloudCover, precipProbability, stale } into a plain-language status.
 function formatWeatherWarning(weather) {
   if (!weather) return { tier: null, text: '' };
-  const { cloudCover, precipProbability } = weather;
+  const { cloudCover, precipProbability, stale } = weather;
+  const suffix = stale ? ' (may be outdated)' : '';
 
   const cloudWarning = cloudCover > CLOUD_WARNING;
   const precipWarning = precipProbability > PRECIP_WARNING;
@@ -177,22 +242,22 @@ function formatWeatherWarning(weather) {
     const clauses = [];
     if (cloudWarning) clauses.push('heavy cloud');
     if (precipWarning) clauses.push('rain');
-    return { tier: 'warning', text: `Likely washed out — ${clauses.join(' and ')} expected.` };
+    return { tier: 'warning', text: `Likely washed out — ${clauses.join(' and ')} expected.${suffix}` };
   }
 
   const cloudCaution = cloudCover > CLOUD_CAUTION;
   const precipCaution = precipProbability > PRECIP_CAUTION;
   if (cloudCaution && precipCaution) {
-    return { tier: 'caution', text: 'Partly cloudy with some rain risk — could go either way.' };
+    return { tier: 'caution', text: `Partly cloudy with some rain risk — could go either way.${suffix}` };
   }
   if (cloudCaution) {
-    return { tier: 'caution', text: 'Partly cloudy — could go either way.' };
+    return { tier: 'caution', text: `Partly cloudy — could go either way.${suffix}` };
   }
   if (precipCaution) {
-    return { tier: 'caution', text: 'Some rain risk — could go either way.' };
+    return { tier: 'caution', text: `Some rain risk — could go either way.${suffix}` };
   }
 
-  return { tier: 'good', text: 'Clear skies expected.' };
+  return { tier: 'good', text: `Clear skies expected.${suffix}` };
 }
 
 function renderWeatherWarning(transitionWindow) {
@@ -315,6 +380,7 @@ function renderTransition() {
   els.transitionSummary.textContent = formatSummary(transitionWindow, now);
   updateAmbient(transitionWindow);
   renderWeatherWarning(transitionWindow);
+  updateFeaturedCard(transitionWindow);
   renderLocationLabel(); // keeps the date correct across a midnight rollover in long-lived sessions
 }
 
@@ -391,6 +457,16 @@ document.addEventListener('click', (event) => {
 // A first-ever visit (nothing cached yet) starts with the location card open, inviting the
 // user to set a real location; once one is saved, it stays collapsed on future visits.
 els.locationDetails.open = !cachedLocationAtLoad;
+
+// Single persistent signal covering both "why is weather stale" and "why can't I change
+// location" — checked immediately on load (navigator.onLine reflects current state right
+// away), not just reactively after some action fails.
+function updateOnlineStatus() {
+  els.offlineIndicator.hidden = navigator.onLine;
+}
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+updateOnlineStatus();
 
 const initialTimes = renderLightTimes();
 renderWeather(initialTimes, currentLocation);

@@ -1,7 +1,8 @@
-const CACHE_NAME = 'golden-hour-shell-v13';
+const CACHE_NAME = 'golden-hour-shell-v16';
 const APP_SHELL = [
   '/',
   '/index.html',
+  '/offline.html',
   '/css/styles.css',
   '/js/app.js',
   '/js/light-times.js',
@@ -36,6 +37,16 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request))
+    caches.match(event.request).then((cached) => {
+      if (cached) return cached;
+      return fetch(event.request).catch((error) => {
+        // Only navigations (loading a page) get the offline fallback — a failed, uncached
+        // asset request (script/style/image) just fails naturally, same as before.
+        if (event.request.mode === 'navigate') {
+          return caches.match('/offline.html');
+        }
+        throw error;
+      });
+    })
   );
 });
