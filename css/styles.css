@@ -283,6 +283,14 @@ main section h2 {
   padding: 0.4rem 0.8rem;
 }
 
+/* The class above's unconditional `display: inline-flex` otherwise beats the browser's built-in
+   `[hidden] { display: none }` rule (same specificity, author origin wins), so a JS-set `hidden`
+   attribute alone doesn't visually hide either toggle. */
+.notify-toggle[hidden],
+.share-toggle[hidden] {
+  display: none;
+}
+
 /* fill/stroke via currentColor — matches whatever text colour the button already resolves to
    (default, gold-filled "on" state, disabled, any theme), so the icon never needs its own
    colour rules. Decorative only: the button's own text already carries its accessible name. */
