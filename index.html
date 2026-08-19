@@ -31,7 +31,25 @@
       <div id="transition-diagram" class="transition-diagram"></div>
       <p id="transition-summary" class="transition-summary" role="status"></p>
       <p id="weather-warning" class="weather-warning" role="status"></p>
-      <button type="button" id="notify-toggle" class="notify-toggle" aria-pressed="false" hidden></button>
+      <div class="transition-actions">
+        <button type="button" id="notify-toggle" class="notify-toggle" aria-pressed="false" hidden>
+          <svg class="btn-icon" viewBox="0 0 18 18" width="14" height="14" aria-hidden="true" focusable="false">
+            <path d="M9 1.5a1 1 0 0 1 1 1v.55a4.6 4.6 0 0 1 3.6 4.5v3l1.2 1.9a.9.9 0 0 1-.76 1.38H3.96a.9.9 0 0 1-.76-1.38l1.2-1.9v-3a4.6 4.6 0 0 1 3.6-4.5V2.5a1 1 0 0 1 1-1z" />
+            <path d="M7.2 14.5a1.8 1.8 0 0 0 3.6 0h-3.6z" />
+          </svg>
+          <span id="notify-toggle-label"></span>
+        </button>
+        <button type="button" id="share-toggle" class="share-toggle" hidden>
+          <svg class="btn-icon" viewBox="0 0 18 18" width="14" height="14" aria-hidden="true" focusable="false">
+            <circle cx="14" cy="4" r="2" class="btn-icon-node" />
+            <circle cx="4" cy="9" r="2" class="btn-icon-node" />
+            <circle cx="14" cy="14" r="2" class="btn-icon-node" />
+            <line x1="5.8" y1="7.8" x2="12.2" y2="4.9" class="btn-icon-line" />
+            <line x1="5.8" y1="10.2" x2="12.2" y2="13.1" class="btn-icon-line" />
+          </svg>
+          <span>Share today's times</span>
+        </button>
+      </div>
       <p id="notify-status" class="notify-status" role="status" hidden></p>
     </section>
 

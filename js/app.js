@@ -10,6 +10,7 @@ import {
   resolveViaGeolocation,
   searchLocations,
   toLocation,
+  locationFromSearchParams,
 } from './location.js';
 import {
   isSupported as notificationsSupported,
@@ -20,6 +21,7 @@ import {
   scheduleNext as scheduleNextNotification,
   cancelScheduled as cancelScheduledNotification,
 } from './notifications.js';
+import { buildSharePayload } from './share.js';
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -44,7 +46,9 @@ const els = {
   offlineIndicator: document.getElementById('offline-indicator'),
   featuredSection: document.getElementById('featured-section'),
   notifyToggle: document.getElementById('notify-toggle'),
+  notifyToggleLabel: document.getElementById('notify-toggle-label'),
   notifyStatus: document.getElementById('notify-status'),
+  shareToggle: document.getElementById('share-toggle'),
   popover: document.getElementById('transition-popover'),
   popoverClose: document.getElementById('transition-popover-close'),
   popoverTitle: document.getElementById('transition-popover-title'),
@@ -63,8 +67,17 @@ const GEOLOCATION_ERROR_MESSAGES = {
   unsupported: "Geolocation isn't supported in this browser. You can search for a city instead.",
 };
 
+// A shared link's location wins over whatever's cached on this device — the visitor followed a
+// link to a specific place, so that intent takes priority. Consumed once: cached for future
+// visits and stripped from the URL so a later plain reload doesn't keep re-reading it.
+const sharedLocationAtLoad = locationFromSearchParams(window.location.search);
+if (sharedLocationAtLoad) {
+  setCachedLocation(sharedLocationAtLoad);
+  window.history.replaceState(null, '', window.location.pathname);
+}
+
 const cachedLocationAtLoad = getCachedLocation();
-let currentLocation = cachedLocationAtLoad || DEFAULT_LOCATION;
+let currentLocation = sharedLocationAtLoad || cachedLocationAtLoad || DEFAULT_LOCATION;
 
 function showMessage(text) {
   els.message.textContent = text;
@@ -404,7 +417,7 @@ function renderNotifyToggle() {
   els.notifyToggle.hidden = false;
   els.notifyToggle.disabled = permission === 'denied';
   els.notifyToggle.setAttribute('aria-pressed', String(optedIn));
-  els.notifyToggle.textContent = optedIn ? 'Notifications on' : 'Notify me when golden hour starts';
+  els.notifyToggleLabel.textContent = optedIn ? 'Notifications on' : 'Notify me when golden hour starts';
 
   const statusText = permission === 'denied' ? NOTIFY_STATUS_MESSAGE.denied : optedIn ? NOTIFY_STATUS_MESSAGE.on : '';
   els.notifyStatus.textContent = statusText;
@@ -438,6 +451,22 @@ async function toggleNotifications() {
 }
 
 els.notifyToggle.addEventListener('click', toggleNotifications);
+
+// Hidden entirely on browsers without the Web Share API — matches the notify toggle's
+// progressive-enhancement precedent (Phase 7): nothing shown, no degraded alternate mechanism.
+els.shareToggle.hidden = !('share' in navigator);
+
+els.shareToggle.addEventListener('click', async () => {
+  const times = getLightTimes(currentLocation.lat, currentLocation.lng, new Date());
+  const payload = buildSharePayload(currentLocation, times);
+  try {
+    await navigator.share(payload);
+  } catch {
+    // AbortError (user dismissed the share sheet) is a normal outcome, not a failure. Any other
+    // rejection is also left silent: this is a best-effort convenience feature, and a real
+    // failure is already visible to the user in the OS-level share sheet itself.
+  }
+});
 
 function renderTransition() {
   hidePopover();

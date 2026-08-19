@@ -238,10 +238,40 @@ main section h2 {
   font-weight: 600;
 }
 
-.notify-toggle {
-  align-self: center;
+.transition-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.notify-toggle,
+.share-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   font-size: 0.85rem;
   padding: 0.4rem 0.8rem;
+}
+
+/* fill/stroke via currentColor — matches whatever text colour the button already resolves to
+   (default, gold-filled "on" state, disabled, any theme), so the icon never needs its own
+   colour rules. Decorative only: the button's own text already carries its accessible name. */
+.btn-icon {
+  flex-shrink: 0;
+  fill: currentColor;
+}
+
+.btn-icon-node {
+  fill: currentColor;
+}
+
+.btn-icon-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.3;
+  stroke-linecap: round;
 }
 
 /* Filled, not just outlined — gold text/border on the light-theme white surface only reaches
