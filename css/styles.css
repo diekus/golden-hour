@@ -56,20 +56,20 @@ body[data-ambient]::before {
 
 body[data-ambient="active"] {
   --ambient-color: var(--color-text-muted);
-  --ambient-min: 0.05;
-  --ambient-max: 0.13;
+  --ambient-min: 0.06;
+  --ambient-max: 0.16;
 }
 
 body[data-ambient="gold"] {
   --ambient-color: var(--color-golden);
-  --ambient-min: 0.18;
-  --ambient-max: 0.36;
+  --ambient-min: 0.22;
+  --ambient-max: 0.43;
 }
 
 body[data-ambient="blue"] {
   --ambient-color: var(--color-blue);
-  --ambient-min: 0.18;
-  --ambient-max: 0.36;
+  --ambient-min: 0.22;
+  --ambient-max: 0.43;
 }
 
 @keyframes ambient-pulse {
