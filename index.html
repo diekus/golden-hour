@@ -24,23 +24,30 @@
 
     <section aria-labelledby="location-heading" id="location-section">
       <h2 id="location-heading">Location</h2>
-      <p class="location-current">Showing: <strong id="location-label"></strong></p>
+      <details id="location-details" class="location-card">
+        <summary id="location-summary">
+          <span class="location-summary-text">Showing: <strong id="location-label"></strong></span>
+          <span class="location-chevron" aria-hidden="true"></span>
+        </summary>
 
-      <div class="location-actions">
-        <button type="button" id="use-my-location-btn">Use my location</button>
-        <span class="location-hint">Only used to show accurate times, right on your device.</span>
-      </div>
+        <div class="location-picker">
+          <div class="location-actions">
+            <button type="button" id="use-my-location-btn">Use my location</button>
+            <span class="location-hint">Only used to show accurate times, right on your device.</span>
+          </div>
 
-      <form id="location-search-form" class="location-search">
-        <label for="location-search-input">Or search for a city</label>
-        <div class="location-search-row">
-          <input type="text" id="location-search-input" name="q" placeholder="e.g. Tokyo" autocomplete="off">
-          <button type="submit">Search</button>
+          <form id="location-search-form" class="location-search">
+            <label for="location-search-input">Or search for a city</label>
+            <div class="location-search-row">
+              <input type="text" id="location-search-input" name="q" placeholder="e.g. Tokyo" autocomplete="off">
+              <button type="submit">Search</button>
+            </div>
+          </form>
+
+          <ul id="location-results" class="location-results" hidden></ul>
+          <p id="location-message" class="location-message" role="status" hidden></p>
         </div>
-      </form>
-
-      <ul id="location-results" class="location-results" hidden></ul>
-      <p id="location-message" class="location-message" role="status" hidden></p>
+      </details>
     </section>
 
     <section aria-labelledby="sun-heading">
@@ -61,6 +68,17 @@
       <light-window-card id="card-blue-evening"></light-window-card>
     </section>
   </main>
+
+  <div id="transition-popover" class="transition-popover" role="dialog" aria-labelledby="transition-popover-title" hidden>
+    <button type="button" id="transition-popover-close" class="transition-popover-close" aria-label="Close">×</button>
+    <p id="transition-popover-title" class="transition-popover-title"></p>
+    <dl class="transition-popover-details">
+      <div><dt>Start</dt><dd id="transition-popover-start"></dd></div>
+      <div><dt>End</dt><dd id="transition-popover-end"></dd></div>
+      <div><dt>Progress</dt><dd id="transition-popover-progress"></dd></div>
+    </dl>
+  </div>
+
   <script type="module" src="js/app.js"></script>
 </body>
 </html>

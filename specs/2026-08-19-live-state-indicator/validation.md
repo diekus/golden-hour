@@ -2,6 +2,8 @@
 
 This phase is ready to merge when all of the following hold.
 
+> **Amendment (2026-08-19, later same day):** the diagram gained boundary time labels (the actual start/transition/end instants shown as text on the arc) and made the blue/gold segments individually tappable, opening a popover with that segment's start, end, and percentage-passed. `renderTransitionDiagram` now takes `(container, transitionWindow, timezone, onSegmentActivate)` instead of just `(container, transitionWindow)`. See the UI-refinement commit after this phase; the window-selection/live-refresh logic validated below is unchanged.
+
 ## Transition-window logic
 - [x] `getTransitionWindow(lat, lng, now)` in `js/transition-window.js` is a pure function (no DOM/network access).
 - [x] For a "now" well before the next combined window, `nowFraction` clamps to `0` (marker at the start edge).

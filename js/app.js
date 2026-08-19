@@ -20,6 +20,7 @@ if ('serviceWorker' in navigator) {
 }
 
 const els = {
+  locationDetails: document.getElementById('location-details'),
   locationLabel: document.getElementById('location-label'),
   useMyLocationBtn: document.getElementById('use-my-location-btn'),
   searchForm: document.getElementById('location-search-form'),
@@ -28,6 +29,12 @@ const els = {
   message: document.getElementById('location-message'),
   transitionDiagram: document.getElementById('transition-diagram'),
   transitionSummary: document.getElementById('transition-summary'),
+  popover: document.getElementById('transition-popover'),
+  popoverClose: document.getElementById('transition-popover-close'),
+  popoverTitle: document.getElementById('transition-popover-title'),
+  popoverStart: document.getElementById('transition-popover-start'),
+  popoverEnd: document.getElementById('transition-popover-end'),
+  popoverProgress: document.getElementById('transition-popover-progress'),
 };
 
 const TRANSITION_REFRESH_MS = 30 * 1000;
@@ -40,7 +47,8 @@ const GEOLOCATION_ERROR_MESSAGES = {
   unsupported: "Geolocation isn't supported in this browser. You can search for a city instead.",
 };
 
-let currentLocation = getCachedLocation() || DEFAULT_LOCATION;
+const cachedLocationAtLoad = getCachedLocation();
+let currentLocation = cachedLocationAtLoad || DEFAULT_LOCATION;
 
 function showMessage(text) {
   els.message.textContent = text;
@@ -110,10 +118,55 @@ function formatSummary(transitionWindow, now) {
   return `${nextLabel} starts in ${until}.`;
 }
 
+function hidePopover() {
+  els.popover.hidden = true;
+}
+
+function showPopover(segment, event) {
+  const now = new Date();
+  const totalMs = segment.end.getTime() - segment.start.getTime();
+  const elapsedMs = Math.min(totalMs, Math.max(0, now.getTime() - segment.start.getTime()));
+  const percent = totalMs > 0 ? Math.round((elapsedMs / totalMs) * 100) : 0;
+  const formatter = timeFormatterFor(currentLocation.timezone);
+
+  els.popoverTitle.textContent = KIND_LABEL[segment.kind] || segment.kind;
+  els.popoverStart.textContent = formatter.format(segment.start);
+  els.popoverEnd.textContent = formatter.format(segment.end);
+  els.popoverProgress.textContent = `${percent}%`;
+
+  els.popover.hidden = false;
+  positionPopover(event);
+}
+
+function positionPopover(event) {
+  const { innerWidth, innerHeight } = window;
+  const popoverRect = els.popover.getBoundingClientRect();
+
+  // Keyboard activation (Enter/Space) has no meaningful clientX/Y — anchor to the
+  // activated element itself instead of the (absent) pointer position.
+  let anchorX = event.clientX;
+  let anchorY = event.clientY;
+  if (!anchorX && !anchorY && event.currentTarget?.getBoundingClientRect) {
+    const targetRect = event.currentTarget.getBoundingClientRect();
+    anchorX = targetRect.left + targetRect.width / 2;
+    anchorY = targetRect.top + targetRect.height / 2;
+  }
+
+  const x = Math.min(Math.max(8, anchorX - popoverRect.width / 2), innerWidth - popoverRect.width - 8);
+  const y = Math.min(anchorY + 16, innerHeight - popoverRect.height - 8);
+  els.popover.style.left = `${x}px`;
+  els.popover.style.top = `${y}px`;
+}
+
+function timeFormatterFor(timezone) {
+  return new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: timezone });
+}
+
 function renderTransition() {
+  hidePopover();
   const now = new Date();
   const transitionWindow = getTransitionWindow(currentLocation.lat, currentLocation.lng, now);
-  renderTransitionDiagram(els.transitionDiagram, transitionWindow);
+  renderTransitionDiagram(els.transitionDiagram, transitionWindow, currentLocation.timezone, showPopover);
   els.transitionSummary.textContent = formatSummary(transitionWindow, now);
 }
 
@@ -125,6 +178,7 @@ function setLocation(location) {
   renderTransition();
   showMessage('');
   clearResults();
+  els.locationDetails.open = false;
 }
 
 function renderResults(results) {
@@ -171,6 +225,23 @@ els.searchForm.addEventListener('submit', async (event) => {
     showMessage('Search failed. Please try again.');
   }
 });
+
+els.popoverClose.addEventListener('click', hidePopover);
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !els.popover.hidden) hidePopover();
+});
+
+document.addEventListener('click', (event) => {
+  if (els.popover.hidden) return;
+  const clickedInsidePopover = els.popover.contains(event.target);
+  const clickedASegment = event.target.classList?.contains('transition-segment--interactive');
+  if (!clickedInsidePopover && !clickedASegment) hidePopover();
+});
+
+// A first-ever visit (nothing cached yet) starts with the location card open, inviting the
+// user to set a real location; once one is saved, it stays collapsed on future visits.
+els.locationDetails.open = !cachedLocationAtLoad;
 
 els.locationLabel.textContent = currentLocation.label;
 renderLightTimes();

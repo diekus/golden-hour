@@ -2,6 +2,8 @@
 
 This phase is ready to merge when all of the following hold.
 
+> **Amendment (2026-08-19, later same day):** the location control was subsequently changed from "always visible" to a collapsible `<details>`/`<summary>` card (collapsed by default once a location is saved, open on a first-ever visit) — see the UI-refinement commit after this phase. The "always visible" bullets below reflect this phase's original implementation and are superseded; the underlying resolution/search/persistence/timezone logic they validated is unchanged.
+
 ## Location resolution
 - [x] `js/location.js` exists with `DEFAULT_LOCATION`, `getCachedLocation`/`setCachedLocation`/`clearCachedLocation`, `resolveViaGeolocation`, and `searchLocations`.
 - [x] Geolocation success produces a location object with the device's own IANA timezone attached (GPS coordinates carry no timezone of their own).

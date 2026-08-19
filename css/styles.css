@@ -90,17 +90,116 @@ main section h2 {
   font-size: 1rem;
 }
 
+.transition-label {
+  fill: var(--color-text-muted);
+  font-family: var(--font-sans);
+  font-size: 9px;
+}
+
+.transition-segment--interactive {
+  cursor: pointer;
+}
+
+.transition-segment--interactive:focus-visible {
+  outline: 2px solid var(--color-text);
+  outline-offset: 2px;
+}
+
+.transition-popover {
+  position: fixed;
+  z-index: 10;
+  max-width: 14rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-text-muted);
+  border-radius: 0.5rem;
+  padding: 0.75rem 0.9rem;
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.25);
+}
+
+.transition-popover-close {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  border: none;
+  background: none;
+  padding: 0.25rem 0.5rem;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.transition-popover-title {
+  margin: 0 1.25rem 0.5rem 0;
+  font-weight: 600;
+}
+
+.transition-popover-details {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.2rem 0.6rem;
+  font-size: 0.85rem;
+}
+
+.transition-popover-details dt {
+  color: var(--color-text-muted);
+}
+
+.transition-popover-details dd {
+  margin: 0;
+}
+
 #location-section {
   gap: 0.6rem;
 }
 
-.location-current {
-  margin: 0;
+.location-card {
+  border: 1px solid var(--color-text-muted);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+}
+
+.location-card summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.7rem 0.9rem;
+}
+
+.location-card summary::-webkit-details-marker {
+  display: none;
+}
+
+.location-summary-text {
   font-size: 0.95rem;
 }
 
-.location-current strong {
+.location-summary-text strong {
   color: var(--color-text);
+}
+
+.location-chevron {
+  flex-shrink: 0;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-right: 2px solid var(--color-text-muted);
+  border-bottom: 2px solid var(--color-text-muted);
+  transform: rotate(45deg);
+  transition: transform 0.15s ease;
+}
+
+.location-card[open] .location-chevron {
+  transform: rotate(-135deg);
+}
+
+.location-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0 0.9rem 0.9rem;
 }
 
 .location-actions {
