@@ -1,4 +1,4 @@
-const CACHE_NAME = 'golden-hour-shell-v5';
+const CACHE_NAME = 'golden-hour-shell-v6';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -11,6 +11,8 @@ const APP_SHELL = [
   '/js/vendor/suncalc.js',
   '/js/components/light-window-card.js',
   '/manifest.webmanifest',
+  '/images/icons/logo-dark.png',
+  '/images/icons/logo-light.png',
 ];
 
 self.addEventListener('install', (event) => {

@@ -13,7 +13,12 @@
 </head>
 <body>
   <header>
-    <h1>Golden Hour</h1>
+    <h1>
+      <picture>
+        <source srcset="images/icons/logo-light.png" media="(prefers-color-scheme: dark)">
+        <img src="images/icons/logo-dark.png" alt="Golden Hour" class="logo">
+      </picture>
+    </h1>
   </header>
   <main>
     <section aria-labelledby="transition-heading" id="transition-section">
@@ -68,6 +73,10 @@
       <light-window-card id="card-blue-evening"></light-window-card>
     </section>
   </main>
+
+  <footer>
+    <p>&copy; diekus 2026</p>
+  </footer>
 
   <div id="transition-popover" class="transition-popover" role="dialog" aria-labelledby="transition-popover-title" hidden>
     <button type="button" id="transition-popover-close" class="transition-popover-close" aria-label="Close">×</button>

@@ -42,7 +42,12 @@ header {
 
 header h1 {
   margin: 0;
-  font-size: clamp(1.75rem, 5vw, 2.5rem);
+}
+
+.logo {
+  display: inline-block;
+  width: min(90%, 18rem);
+  height: auto;
 }
 
 main {
@@ -272,5 +277,16 @@ button:hover {
 .location-message {
   margin: 0;
   font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+footer {
+  text-align: center;
+  padding: 1.5rem 1rem 2.5rem;
+}
+
+footer p {
+  margin: 0;
+  font-size: 0.8rem;
   color: var(--color-text-muted);
 }
