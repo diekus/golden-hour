@@ -35,7 +35,8 @@ function formatDuration(ms) {
 
 function formatWeather(weather) {
   if (!weather) return '';
-  return `Cloud ${weather.cloudCover}% · Rain ${weather.precipProbability}%`;
+  const suffix = weather.stale ? ' (may be outdated)' : '';
+  return `Cloud ${weather.cloudCover}% · Rain ${weather.precipProbability}%${suffix}`;
 }
 
 const ACCENT_VAR = {

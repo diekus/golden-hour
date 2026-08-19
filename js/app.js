@@ -1,7 +1,7 @@
 import { getLightTimes } from './light-times.js';
 import { getTransitionWindow } from './transition-window.js';
 import { renderTransitionDiagram } from './transition-diagram.js';
-import { fetchForecast, averageForWindow } from './weather.js';
+import { fetchForecast, averageForWindow, getCachedForecast, setCachedForecast } from './weather.js';
 import './components/light-window-card.js';
 import {
   DEFAULT_LOCATION,
@@ -32,6 +32,7 @@ const els = {
   transitionDiagram: document.getElementById('transition-diagram'),
   transitionSummary: document.getElementById('transition-summary'),
   weatherWarning: document.getElementById('weather-warning'),
+  offlineIndicator: document.getElementById('offline-indicator'),
   popover: document.getElementById('transition-popover'),
   popoverClose: document.getElementById('transition-popover-close'),
   popoverTitle: document.getElementById('transition-popover-title'),
@@ -120,10 +121,15 @@ async function renderWeather(times, location) {
   weatherByWindow = {};
 
   let hourly = null;
+  let stale = false;
   try {
     hourly = await fetchForecast(location.lat, location.lng);
+    setCachedForecast(location.lat, location.lng, hourly);
   } catch {
-    hourly = null; // best-effort enhancement — cards simply show no weather line
+    // Fresh fetch failed (e.g. offline) — fall back to the last cached forecast, but only if
+    // it's for a location close enough to this one to plausibly still be relevant.
+    hourly = getCachedForecast(location.lat, location.lng);
+    stale = hourly !== null;
   }
 
   if (currentLocation !== location) return;
@@ -131,10 +137,11 @@ async function renderWeather(times, location) {
   for (const { id, window } of WEATHER_CARDS) {
     const card = document.getElementById(id);
     const windowData = times[window];
-    const weather =
+    const averaged =
       windowData.start && windowData.end
         ? averageForWindow(hourly, windowData.start.time, windowData.end.time)
         : null;
+    const weather = averaged ? { ...averaged, stale } : null;
     card.data = { ...card.data, weather };
     weatherByWindow[window] = weather;
   }
@@ -166,10 +173,11 @@ const PRECIP_CAUTION = 20;
 const PRECIP_WARNING = 50;
 
 // Pure interpretation layer over Phase 4's raw numbers — no fetching, no averaging, just
-// turning { cloudCover, precipProbability } into a plain-language status.
+// turning { cloudCover, precipProbability, stale } into a plain-language status.
 function formatWeatherWarning(weather) {
   if (!weather) return { tier: null, text: '' };
-  const { cloudCover, precipProbability } = weather;
+  const { cloudCover, precipProbability, stale } = weather;
+  const suffix = stale ? ' (may be outdated)' : '';
 
   const cloudWarning = cloudCover > CLOUD_WARNING;
   const precipWarning = precipProbability > PRECIP_WARNING;
@@ -177,22 +185,22 @@ function formatWeatherWarning(weather) {
     const clauses = [];
     if (cloudWarning) clauses.push('heavy cloud');
     if (precipWarning) clauses.push('rain');
-    return { tier: 'warning', text: `Likely washed out — ${clauses.join(' and ')} expected.` };
+    return { tier: 'warning', text: `Likely washed out — ${clauses.join(' and ')} expected.${suffix}` };
   }
 
   const cloudCaution = cloudCover > CLOUD_CAUTION;
   const precipCaution = precipProbability > PRECIP_CAUTION;
   if (cloudCaution && precipCaution) {
-    return { tier: 'caution', text: 'Partly cloudy with some rain risk — could go either way.' };
+    return { tier: 'caution', text: `Partly cloudy with some rain risk — could go either way.${suffix}` };
   }
   if (cloudCaution) {
-    return { tier: 'caution', text: 'Partly cloudy — could go either way.' };
+    return { tier: 'caution', text: `Partly cloudy — could go either way.${suffix}` };
   }
   if (precipCaution) {
-    return { tier: 'caution', text: 'Some rain risk — could go either way.' };
+    return { tier: 'caution', text: `Some rain risk — could go either way.${suffix}` };
   }
 
-  return { tier: 'good', text: 'Clear skies expected.' };
+  return { tier: 'good', text: `Clear skies expected.${suffix}` };
 }
 
 function renderWeatherWarning(transitionWindow) {
@@ -391,6 +399,16 @@ document.addEventListener('click', (event) => {
 // A first-ever visit (nothing cached yet) starts with the location card open, inviting the
 // user to set a real location; once one is saved, it stays collapsed on future visits.
 els.locationDetails.open = !cachedLocationAtLoad;
+
+// Single persistent signal covering both "why is weather stale" and "why can't I change
+// location" — checked immediately on load (navigator.onLine reflects current state right
+// away), not just reactively after some action fails.
+function updateOnlineStatus() {
+  els.offlineIndicator.hidden = navigator.onLine;
+}
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+updateOnlineStatus();
 
 const initialTimes = renderLightTimes();
 renderWeather(initialTimes, currentLocation);
