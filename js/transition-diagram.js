@@ -116,12 +116,12 @@ function segmentMarkup(segment, index, windowStart, totalMs, interactive) {
     ? `tabindex="0" role="button" aria-label="${KIND_LABEL[segment.kind]} details" data-segment-index="${index}" class="transition-segment transition-segment--interactive"`
     : 'aria-hidden="true" class="transition-segment"';
 
-  // Blue is dashed, not just a different hue — gold and blue must stay distinguishable to
-  // someone who can't reliably tell the two colours apart (WCAG 1.4.1, use of colour), not
-  // just to someone with typical colour vision.
-  const dasharray = segment.kind === 'blue' ? ' stroke-dasharray="10 8"' : '';
-
-  return `<path d="${d}" fill="none" stroke="${KIND_COLOR_VAR[segment.kind]}" stroke-width="${STROKE_WIDTH}" stroke-linecap="round"${dasharray} ${attrs} />`;
+  // Both segments render as a solid stroke. An earlier dashed pattern on the blue segment
+  // (for WCAG 1.4.1, not distinguishing gold/blue by colour alone) rendered as overlapping
+  // rounded blobs rather than a clean line at this stroke width, so it was dropped in favour of
+  // the non-colour information that already exists nearby: each segment's own aria-label, the
+  // boundary time labels on the arc, and the plain-text summary below it.
+  return `<path d="${d}" fill="none" stroke="${KIND_COLOR_VAR[segment.kind]}" stroke-width="${STROKE_WIDTH}" stroke-linecap="round" ${attrs} />`;
 }
 
 // Tracks, per container, which combined window was last rendered and a reference to its marker
