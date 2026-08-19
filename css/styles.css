@@ -3,21 +3,30 @@
   --color-surface: #1d2029;
   --color-text: #f4f1ea;
   --color-text-muted: #a8a9ad;
-  --color-golden: #e8a33d;
-  --color-blue: #6f95e0;
+  /* "Marigold & Twilight" — finalized in Phase 11 from a 4-way visual comparison. Every value
+     here and in the light-theme override below is WCAG AA-verified (>=4:1 against this theme's
+     bg/surface — see specs/2026-08-19-visual-brand-polish/validation.md for the full table);
+     re-verify against that same bar before changing any of them. */
+  --color-golden: #f2a52c;
+  --color-blue: #6584e6;
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
   /* Deliberately fixed regardless of light/dark theme — the "featured" card is meant to read
-     as a spotlight, consistently vivid either way, not to blend with the ambient theme.
-     Chosen specifically for contrast: gold is light, so it pairs with dark text (~8.5:1); the
-     featured blue is a richer, darker blue than --color-blue so white text stays readable
-     (~8.3:1) even though --color-blue itself is too light for that in dark theme. */
-  --color-golden-featured-bg: #e8a33d;
+     as a spotlight, consistently vivid either way, not to blend with the ambient theme. Reuses
+     the base dark-theme gold and light-theme blue directly (one fewer bespoke value to keep in
+     sync) — both independently verified as strong pairings with their fixed text colours
+     (~8.8:1 dark text on gold, ~7.5:1 light text on blue). */
+  --color-golden-featured-bg: #f2a52c;
   --color-golden-featured-text: #14161a;
   --color-golden-featured-text-muted: rgba(20, 22, 26, 0.75);
-  --color-blue-featured-bg: #2c4d8a;
+  --color-blue-featured-bg: #31469e;
   --color-blue-featured-text: #f4f1ea;
   --color-blue-featured-text-muted: rgba(244, 241, 234, 0.75);
+
+  /* Depth scale (Phase 11) — shared shadow tokens so elevation reads consistently across cards,
+     the popover, and buttons instead of each surface inventing its own box-shadow values. */
+  --shadow-sm: 0 0.2rem 0.6rem rgba(0, 0, 0, 0.18);
+  --shadow-md: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.22);
 }
 
 @media (prefers-color-scheme: light) {
@@ -26,12 +35,13 @@
     --color-surface: #ffffff;
     --color-text: #14161a;
     --color-text-muted: #55575c;
-    --color-blue: #3d5ea8;
-    /* The dark-theme gold (#e8a33d) only reaches ~2:1 against this theme's light background/
-       surface — well under WCAG 1.4.11's 3:1 minimum for a graphical object (the diagram's gold
-       segment) and a UI component boundary (the golden-hour cards' left border). This darker
-       gold clears both at ~4.1:1/4.4:1 while staying in the same amber hue family. */
-    --color-golden: #a86a12;
+    --color-golden: #a8640a;
+    --color-blue: #31469e;
+    /* Shadows read heavier against a light ground than a dark one at the same opacity — lighten
+       both tokens here so elevation looks equivalent in both themes rather than muddier in
+       light mode. */
+    --shadow-sm: 0 0.2rem 0.6rem rgba(20, 22, 26, 0.1);
+    --shadow-md: 0 0.5rem 1.5rem rgba(20, 22, 26, 0.14);
   }
 }
 
@@ -300,7 +310,7 @@ main section h2 {
   background: var(--color-golden-featured-bg);
   border-color: var(--color-golden-featured-bg);
   color: var(--color-golden-featured-text);
-  box-shadow: 0 0.2rem 0.6rem rgba(0, 0, 0, 0.18);
+  box-shadow: var(--shadow-sm);
 }
 
 .notify-toggle:disabled {
@@ -328,6 +338,28 @@ main section h2 {
   stroke-linecap: round;
 }
 
+/* The marker is a stable, reused DOM node across renders within the same combined window (see
+   js/transition-diagram.js) — that continuity is what lets these transitions actually animate
+   from one position/colour to the next, rather than jumping between unrelated elements.
+   Segments themselves practically never change colour mid-window, but the transition is kept
+   here defensively/for correctness in case that ever isn't true. */
+.transition-marker {
+  transition: cx 0.6s linear, cy 0.6s linear, stroke 0.6s ease;
+}
+
+.transition-segment,
+.transition-segment--interactive {
+  transition: stroke 0.4s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .transition-marker,
+  .transition-segment,
+  .transition-segment--interactive {
+    transition: none;
+  }
+}
+
 .transition-segment--interactive {
   cursor: pointer;
 }
@@ -337,6 +369,11 @@ main section h2 {
   outline-offset: 2px;
 }
 
+/* Visibility is class-driven (.transition-popover--open), not the hidden attribute — the
+   hidden attribute's UA stylesheet rule uses `display: none !important`, which would fight
+   the discrete `display` transition below. A plain author-controlled class sidesteps that
+   entirely. Falls back to an instant, correct show/hide on any browser that doesn't understand
+   @starting-style/allow-discrete: the display flip itself still works, just without motion. */
 .transition-popover {
   position: fixed;
   z-index: 10;
@@ -346,7 +383,30 @@ main section h2 {
   border: 1px solid var(--color-text-muted);
   border-radius: 0.5rem;
   padding: 0.75rem 0.9rem;
-  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.25);
+  box-shadow: var(--shadow-md);
+  display: none;
+  opacity: 0;
+  transform: scale(0.94);
+  transition: opacity 0.18s ease, transform 0.18s ease, display 0.18s allow-discrete;
+}
+
+.transition-popover--open {
+  display: block;
+  opacity: 1;
+  transform: scale(1);
+}
+
+@starting-style {
+  .transition-popover--open {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .transition-popover {
+    transition: none;
+  }
 }
 
 .transition-popover-close {
@@ -389,6 +449,37 @@ main section h2 {
   border: 1px solid var(--color-text-muted);
   border-radius: 0.5rem;
   background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Animates the native <details> content reveal — block-size and opacity, through the
+   ::details-content pseudo-element (the spec-correct, JS-free way to do this) — instead of the
+   browser's instant native toggle. Unsupported browsers simply don't apply these rules at all,
+   so they keep today's instant (but fully correct) open/close: graceful degradation by
+   construction, not a separate fallback path. */
+.location-card::details-content {
+  overflow: hidden;
+  transition: content-visibility 0.25s allow-discrete, opacity 0.25s ease, block-size 0.25s ease;
+  opacity: 0;
+  block-size: 0;
+}
+
+.location-card[open]::details-content {
+  opacity: 1;
+  block-size: auto;
+}
+
+@starting-style {
+  .location-card[open]::details-content {
+    opacity: 0;
+    block-size: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .location-card::details-content {
+    transition: none;
+  }
 }
 
 .location-card summary {
@@ -454,10 +545,19 @@ button {
   border-radius: 0.4rem;
   padding: 0.5rem 0.9rem;
   cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
 button:hover {
   border-color: var(--color-text);
+  box-shadow: var(--shadow-md);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button {
+    transition: none;
+  }
 }
 
 .location-search {

@@ -124,6 +124,13 @@ function segmentMarkup(segment, index, windowStart, totalMs, interactive) {
   return `<path d="${d}" fill="none" stroke="${KIND_COLOR_VAR[segment.kind]}" stroke-width="${STROKE_WIDTH}" stroke-linecap="round"${dasharray} ${attrs} />`;
 }
 
+// Tracks, per container, which combined window was last rendered and a reference to its marker
+// element — lets same-window re-renders (the common case: most 30s ticks) update the marker in
+// place instead of replacing it, so the CSS transition on .transition-marker (see
+// css/styles.css) has a continuous element to animate from/to rather than jumping between two
+// unrelated DOM nodes.
+const stateByContainer = new WeakMap();
+
 // The <svg> itself is NOT aria-hidden: the interactive gold/blue segments are genuinely
 // focusable/labelled elements, and aria-hidden on an ancestor removes an entire subtree from
 // the accessibility tree regardless of a descendant's own role/tabindex — that would make them
@@ -133,11 +140,27 @@ function segmentMarkup(segment, index, windowStart, totalMs, interactive) {
 export function renderTransitionDiagram(container, transitionWindow, timezone, onSegmentActivate) {
   if (!transitionWindow) {
     container.innerHTML = '';
+    stateByContainer.delete(container);
     return;
   }
 
   const { windowStart, windowEnd, segments, nowFraction, currentKind } = transitionWindow;
   const totalMs = windowEnd.getTime() - windowStart.getTime();
+  const windowKey = `${windowStart.getTime()}-${windowEnd.getTime()}`;
+
+  const marker = pointAt(nowFraction, RADIUS);
+  const markerColor = KIND_COLOR_VAR[currentKind];
+
+  // A given combined window's segment kinds/times are fixed for its whole ~20+ hour display —
+  // only the marker's position/colour genuinely changes tick to tick. So a same-window
+  // re-render only needs the marker updated, not a full rebuild.
+  const prev = stateByContainer.get(container);
+  if (prev && prev.windowKey === windowKey && prev.markerEl.isConnected) {
+    prev.markerEl.setAttribute('cx', marker.x.toFixed(2));
+    prev.markerEl.setAttribute('cy', marker.y.toFixed(2));
+    prev.markerEl.setAttribute('stroke', markerColor);
+    return;
+  }
 
   const segmentsMarkup = segments
     .map((segment, index) => segmentMarkup(segment, index, windowStart, totalMs, Boolean(onSegmentActivate)))
@@ -150,17 +173,16 @@ export function renderTransitionDiagram(container, transitionWindow, timezone, o
     )
     .join('');
 
-  const marker = pointAt(nowFraction, RADIUS);
-  const markerColor = KIND_COLOR_VAR[currentKind];
-
   container.innerHTML = `
     <svg viewBox="0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}" class="transition-svg">
       ${segmentsMarkup}
       ${sunEventMarkup(transitionWindow)}
       ${labelsMarkup}
-      <circle cx="${marker.x.toFixed(2)}" cy="${marker.y.toFixed(2)}" r="${MARKER_RADIUS}" fill="var(--color-surface)" stroke="${markerColor}" stroke-width="3" aria-hidden="true" />
+      <circle cx="${marker.x.toFixed(2)}" cy="${marker.y.toFixed(2)}" r="${MARKER_RADIUS}" fill="var(--color-surface)" stroke="${markerColor}" stroke-width="3" aria-hidden="true" class="transition-marker" />
     </svg>
   `;
+
+  stateByContainer.set(container, { windowKey, markerEl: container.querySelector('.transition-marker') });
 
   if (!onSegmentActivate) return;
 
