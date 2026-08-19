@@ -33,4 +33,4 @@ This phase is ready to merge when all of the following hold.
 - The golden accent border (`--color-golden`, `#e8a33d`) computes to only ≈2.2:1 contrast against a white card surface in light theme — visibly washed out, though not a WCAG failure since it's decorative (the "Golden hour" label text carries the same information at full contrast). Placeholder colours are explicitly allowed as-is in this phase per `requirements.md`; final palette tuning is Phase 11's job.
 
 ## Merge
-- [ ] Branch `2026-08-19-light-calculation` merges cleanly into `2026-08-18-project-scaffold` (or `main`, once Phase 0 is merged) with no conflicts — pending your review; not yet merged.
+- [x] Branch `2026-08-19-light-calculation` merged into `main` (fast-forward, 2026-08-19), bringing Phase 0 and Phase 1 in together.
