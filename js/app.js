@@ -31,6 +31,7 @@ const els = {
   message: document.getElementById('location-message'),
   transitionDiagram: document.getElementById('transition-diagram'),
   transitionSummary: document.getElementById('transition-summary'),
+  weatherWarning: document.getElementById('weather-warning'),
   popover: document.getElementById('transition-popover'),
   popoverClose: document.getElementById('transition-popover-close'),
   popoverTitle: document.getElementById('transition-popover-title'),
@@ -104,11 +105,20 @@ const WEATHER_CARDS = [
   { id: 'card-blue-evening', window: 'blueHourEvening' },
 ];
 
+// Single source of truth for "what's the weather for window X", keyed the same way as
+// WEATHER_CARDS — the Phase 5 warning reads from here instead of querying the DOM cards.
+let weatherByWindow = {};
+
 // Fetched once per location (never blocks the light-time cards, which are already rendered
 // by the time this resolves) and merged into each of the 4 golden/blue-hour cards' existing
 // data. Guards against a race where the location changes again before this fetch resolves —
 // stale weather for a since-replaced location must never get applied.
 async function renderWeather(times, location) {
+  // Cleared synchronously, before the fetch even starts — otherwise a location switch would
+  // briefly show the *previous* location's warning (renderTransition below runs synchronously
+  // right after this is called, well before the fetch resolves).
+  weatherByWindow = {};
+
   let hourly = null;
   try {
     hourly = await fetchForecast(location.lat, location.lng);
@@ -126,6 +136,75 @@ async function renderWeather(times, location) {
         ? averageForWindow(hourly, windowData.start.time, windowData.end.time)
         : null;
     card.data = { ...card.data, weather };
+    weatherByWindow[window] = weather;
+  }
+
+  // The forecast usually resolves after the first renderTransition() call — give the warning
+  // a chance to appear as soon as data actually arrives, without waiting for the next tick.
+  renderWeatherWarning(getTransitionWindow(currentLocation.lat, currentLocation.lng, new Date()));
+}
+
+// Maps the transition state to one of the 4 window keys above: the window currently active
+// (currentKind is 'gold'/'blue') or the one being waited for (nextTransition.toKind is
+// 'gold'/'blue'). Returns null when neither applies — e.g. the trailing-padding edge case
+// right after a window ends, where there's no specific upcoming colour left to speak to.
+function resolveActiveWeatherWindow(transitionWindow) {
+  if (!transitionWindow) return null;
+  const { currentKind, nextTransition, direction } = transitionWindow;
+
+  const kind = currentKind === 'gold' || currentKind === 'blue' ? currentKind : nextTransition?.toKind;
+  if (kind !== 'gold' && kind !== 'blue') return null;
+
+  const prefix = kind === 'gold' ? 'goldenHour' : 'blueHour';
+  const suffix = direction === 'morning' ? 'Morning' : 'Evening';
+  return `${prefix}${suffix}`;
+}
+
+const CLOUD_CAUTION = 40;
+const CLOUD_WARNING = 80;
+const PRECIP_CAUTION = 20;
+const PRECIP_WARNING = 50;
+
+// Pure interpretation layer over Phase 4's raw numbers — no fetching, no averaging, just
+// turning { cloudCover, precipProbability } into a plain-language status.
+function formatWeatherWarning(weather) {
+  if (!weather) return { tier: null, text: '' };
+  const { cloudCover, precipProbability } = weather;
+
+  const cloudWarning = cloudCover > CLOUD_WARNING;
+  const precipWarning = precipProbability > PRECIP_WARNING;
+  if (cloudWarning || precipWarning) {
+    const clauses = [];
+    if (cloudWarning) clauses.push('heavy cloud');
+    if (precipWarning) clauses.push('rain');
+    return { tier: 'warning', text: `Likely washed out — ${clauses.join(' and ')} expected.` };
+  }
+
+  const cloudCaution = cloudCover > CLOUD_CAUTION;
+  const precipCaution = precipProbability > PRECIP_CAUTION;
+  if (cloudCaution && precipCaution) {
+    return { tier: 'caution', text: 'Partly cloudy with some rain risk — could go either way.' };
+  }
+  if (cloudCaution) {
+    return { tier: 'caution', text: 'Partly cloudy — could go either way.' };
+  }
+  if (precipCaution) {
+    return { tier: 'caution', text: 'Some rain risk — could go either way.' };
+  }
+
+  return { tier: 'good', text: 'Clear skies expected.' };
+}
+
+function renderWeatherWarning(transitionWindow) {
+  const windowKey = resolveActiveWeatherWindow(transitionWindow);
+  const weather = windowKey ? weatherByWindow[windowKey] : null;
+  const { tier, text } = formatWeatherWarning(weather);
+
+  els.weatherWarning.textContent = text;
+  if (tier) {
+    els.weatherWarning.dataset.tier = tier;
+  } else {
+    delete els.weatherWarning.dataset.tier;
   }
 }
 
@@ -235,6 +314,7 @@ function renderTransition() {
   renderTransitionDiagram(els.transitionDiagram, transitionWindow, currentLocation.timezone, showPopover);
   els.transitionSummary.textContent = formatSummary(transitionWindow, now);
   updateAmbient(transitionWindow);
+  renderWeatherWarning(transitionWindow);
   renderLocationLabel(); // keeps the date correct across a midnight rollover in long-lived sessions
 }
 
