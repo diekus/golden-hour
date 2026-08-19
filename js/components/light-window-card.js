@@ -33,6 +33,11 @@ function formatDuration(ms) {
   return `${hours} h ${minutes} min`;
 }
 
+function formatWeather(weather) {
+  if (!weather) return '';
+  return `Cloud ${weather.cloudCover}% · Rain ${weather.precipProbability}%`;
+}
+
 const ACCENT_VAR = {
   golden: 'var(--color-golden)',
   blue: 'var(--color-blue)',
@@ -62,8 +67,9 @@ class LightWindowCard extends HTMLElement {
   _render() {
     if (!this.shadowRoot || !this._data) return;
 
-    const { label, accent = 'neutral', start, end, durationMs, timezone } = this._data;
+    const { label, accent = 'neutral', start, end, durationMs, timezone, weather } = this._data;
     const accentColor = ACCENT_VAR[accent] || ACCENT_VAR.neutral;
+    const weatherMarkup = weather ? `<p class="weather">${formatWeather(weather)}</p>` : '';
 
     const timesMarkup = end
       ? `
@@ -77,12 +83,14 @@ class LightWindowCard extends HTMLElement {
           <span class="reading">${formatReading(end)}</span>
         </div>
         ${durationMs != null ? `<p class="duration">${formatDuration(durationMs)}</p>` : ''}
+        ${weatherMarkup}
       `
       : `
         <div class="row">
           <span class="time">${formatTime(start?.time, timezone)}</span>
           <span class="reading">${formatReading(start)}</span>
         </div>
+        ${weatherMarkup}
       `;
 
     this.shadowRoot.innerHTML = `
@@ -125,6 +133,11 @@ class LightWindowCard extends HTMLElement {
           line-height: 1.4;
         }
         .duration {
+          margin: 0.3rem 0 0;
+          font-size: 0.8rem;
+          color: var(--color-text-muted);
+        }
+        .weather {
           margin: 0.3rem 0 0;
           font-size: 0.8rem;
           color: var(--color-text-muted);

@@ -1,6 +1,7 @@
 import { getLightTimes } from './light-times.js';
 import { getTransitionWindow } from './transition-window.js';
 import { renderTransitionDiagram } from './transition-diagram.js';
+import { fetchForecast, averageForWindow } from './weather.js';
 import './components/light-window-card.js';
 import {
   DEFAULT_LOCATION,
@@ -92,6 +93,40 @@ function renderLightTimes() {
     windowCardData('Blue hour — morning', 'blue', times.blueHourMorning, tz);
   document.getElementById('card-blue-evening').data =
     windowCardData('Blue hour — evening', 'blue', times.blueHourEvening, tz);
+
+  return times;
+}
+
+const WEATHER_CARDS = [
+  { id: 'card-golden-morning', window: 'goldenHourMorning' },
+  { id: 'card-golden-evening', window: 'goldenHourEvening' },
+  { id: 'card-blue-morning', window: 'blueHourMorning' },
+  { id: 'card-blue-evening', window: 'blueHourEvening' },
+];
+
+// Fetched once per location (never blocks the light-time cards, which are already rendered
+// by the time this resolves) and merged into each of the 4 golden/blue-hour cards' existing
+// data. Guards against a race where the location changes again before this fetch resolves —
+// stale weather for a since-replaced location must never get applied.
+async function renderWeather(times, location) {
+  let hourly = null;
+  try {
+    hourly = await fetchForecast(location.lat, location.lng);
+  } catch {
+    hourly = null; // best-effort enhancement — cards simply show no weather line
+  }
+
+  if (currentLocation !== location) return;
+
+  for (const { id, window } of WEATHER_CARDS) {
+    const card = document.getElementById(id);
+    const windowData = times[window];
+    const weather =
+      windowData.start && windowData.end
+        ? averageForWindow(hourly, windowData.start.time, windowData.end.time)
+        : null;
+    card.data = { ...card.data, weather };
+  }
 }
 
 function formatCountdown(ms) {
@@ -207,7 +242,8 @@ function setLocation(location) {
   currentLocation = location;
   setCachedLocation(location);
   renderLocationLabel();
-  renderLightTimes();
+  const times = renderLightTimes();
+  renderWeather(times, location);
   renderTransition();
   showMessage('');
   clearResults();
@@ -276,6 +312,7 @@ document.addEventListener('click', (event) => {
 // user to set a real location; once one is saved, it stays collapsed on future visits.
 els.locationDetails.open = !cachedLocationAtLoad;
 
-renderLightTimes();
+const initialTimes = renderLightTimes();
+renderWeather(initialTimes, currentLocation);
 renderTransition();
 setInterval(renderTransition, TRANSITION_REFRESH_MS);
