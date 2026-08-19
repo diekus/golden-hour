@@ -95,7 +95,7 @@ function sunEventMarkup(transitionWindow) {
   const r = SUN_ICON_RADIUS;
 
   return `
-    <g transform="translate(${x.toFixed(2)}, ${y.toFixed(2)})" class="transition-sun-icon">
+    <g transform="translate(${x.toFixed(2)}, ${y.toFixed(2)})" class="transition-sun-icon" aria-hidden="true">
       <circle r="${r + 1.5}" fill="var(--color-surface)" opacity="0.9" />
       <line x1="${-r * 0.65}" y1="0" x2="${r * 0.65}" y2="0" />
       <path d="M ${-r * 0.5} 0 A ${r * 0.5} ${r * 0.5} 0 0 1 ${r * 0.5} 0" fill="none" />
@@ -111,16 +111,25 @@ function segmentMarkup(segment, index, windowStart, totalMs, interactive) {
   if (!d) return '';
 
   const isColoured = segment.kind === 'blue' || segment.kind === 'gold';
-  const attrs = isColoured && interactive
+  const isInteractive = isColoured && interactive;
+  const attrs = isInteractive
     ? `tabindex="0" role="button" aria-label="${KIND_LABEL[segment.kind]} details" data-segment-index="${index}" class="transition-segment transition-segment--interactive"`
-    : 'class="transition-segment"';
+    : 'aria-hidden="true" class="transition-segment"';
 
-  return `<path d="${d}" fill="none" stroke="${KIND_COLOR_VAR[segment.kind]}" stroke-width="${STROKE_WIDTH}" stroke-linecap="round" ${attrs} />`;
+  // Blue is dashed, not just a different hue — gold and blue must stay distinguishable to
+  // someone who can't reliably tell the two colours apart (WCAG 1.4.1, use of colour), not
+  // just to someone with typical colour vision.
+  const dasharray = segment.kind === 'blue' ? ' stroke-dasharray="10 8"' : '';
+
+  return `<path d="${d}" fill="none" stroke="${KIND_COLOR_VAR[segment.kind]}" stroke-width="${STROKE_WIDTH}" stroke-linecap="round"${dasharray} ${attrs} />`;
 }
 
-// Purely visual — aria-hidden overall, since the text summary alongside it carries the primary
-// accessible information (see js/app.js's formatSummary); the interactive coloured segments are
-// still individually focusable/labelled for anyone who does explore the diagram directly.
+// The <svg> itself is NOT aria-hidden: the interactive gold/blue segments are genuinely
+// focusable/labelled elements, and aria-hidden on an ancestor removes an entire subtree from
+// the accessibility tree regardless of a descendant's own role/tabindex — that would make them
+// keyboard-focusable "phantom" stops a screen reader user could never actually reach. Instead,
+// each purely decorative piece (non-interactive segments, boundary labels, sun icon, position
+// marker) is hidden individually, so only the meaningful interactive parts are exposed.
 export function renderTransitionDiagram(container, transitionWindow, timezone, onSegmentActivate) {
   if (!transitionWindow) {
     container.innerHTML = '';
@@ -137,7 +146,7 @@ export function renderTransitionDiagram(container, transitionWindow, timezone, o
   const labelsMarkup = boundaryLabels(transitionWindow, timezone)
     .map(
       (label) =>
-        `<text x="${label.x.toFixed(2)}" y="${label.y.toFixed(2)}" text-anchor="${label.anchor}" class="transition-label">${label.text}</text>`,
+        `<text x="${label.x.toFixed(2)}" y="${label.y.toFixed(2)}" text-anchor="${label.anchor}" class="transition-label" aria-hidden="true">${label.text}</text>`,
     )
     .join('');
 
@@ -145,11 +154,11 @@ export function renderTransitionDiagram(container, transitionWindow, timezone, o
   const markerColor = KIND_COLOR_VAR[currentKind];
 
   container.innerHTML = `
-    <svg viewBox="0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}" aria-hidden="true" class="transition-svg">
+    <svg viewBox="0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}" class="transition-svg">
       ${segmentsMarkup}
       ${sunEventMarkup(transitionWindow)}
       ${labelsMarkup}
-      <circle cx="${marker.x.toFixed(2)}" cy="${marker.y.toFixed(2)}" r="${MARKER_RADIUS}" fill="var(--color-surface)" stroke="${markerColor}" stroke-width="3" />
+      <circle cx="${marker.x.toFixed(2)}" cy="${marker.y.toFixed(2)}" r="${MARKER_RADIUS}" fill="var(--color-surface)" stroke="${markerColor}" stroke-width="3" aria-hidden="true" />
     </svg>
   `;
 
