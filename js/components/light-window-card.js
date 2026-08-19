@@ -1,11 +1,21 @@
-const timeFormatter = new Intl.DateTimeFormat(undefined, {
-  hour: '2-digit',
-  minute: '2-digit',
-  hour12: false,
-});
+const formattersByTimezone = new Map();
 
-function formatTime(date) {
-  return date ? timeFormatter.format(date) : '--:--';
+function timeFormatter(timezone) {
+  let formatter = formattersByTimezone.get(timezone);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(undefined, {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: timezone,
+    });
+    formattersByTimezone.set(timezone, formatter);
+  }
+  return formatter;
+}
+
+function formatTime(date, timezone) {
+  return date ? timeFormatter(timezone).format(date) : '--:--';
 }
 
 function formatReading(reading) {
@@ -52,25 +62,25 @@ class LightWindowCard extends HTMLElement {
   _render() {
     if (!this.shadowRoot || !this._data) return;
 
-    const { label, accent = 'neutral', start, end, durationMs } = this._data;
+    const { label, accent = 'neutral', start, end, durationMs, timezone } = this._data;
     const accentColor = ACCENT_VAR[accent] || ACCENT_VAR.neutral;
 
     const timesMarkup = end
       ? `
         <div class="row">
-          <span class="time">${formatTime(start?.time)}</span>
+          <span class="time">${formatTime(start?.time, timezone)}</span>
           <span class="reading">${formatReading(start)}</span>
         </div>
         <div class="arrow" aria-hidden="true">↓</div>
         <div class="row">
-          <span class="time">${formatTime(end?.time)}</span>
+          <span class="time">${formatTime(end?.time, timezone)}</span>
           <span class="reading">${formatReading(end)}</span>
         </div>
         ${durationMs != null ? `<p class="duration">${formatDuration(durationMs)}</p>` : ''}
       `
       : `
         <div class="row">
-          <span class="time">${formatTime(start?.time)}</span>
+          <span class="time">${formatTime(start?.time, timezone)}</span>
           <span class="reading">${formatReading(start)}</span>
         </div>
       `;

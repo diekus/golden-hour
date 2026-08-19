@@ -45,12 +45,6 @@ header h1 {
   font-size: clamp(1.75rem, 5vw, 2.5rem);
 }
 
-.location-note {
-  margin: 0.25rem 0 0;
-  color: var(--color-text-muted);
-  font-size: 0.9rem;
-}
-
 main {
   max-width: 36rem;
   margin: 0 auto;
@@ -72,4 +66,90 @@ main section h2 {
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+#location-section {
+  gap: 0.6rem;
+}
+
+.location-current {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.location-current strong {
+  color: var(--color-text);
+}
+
+.location-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.location-hint {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+button {
+  font: inherit;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-text-muted);
+  border-radius: 0.4rem;
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: var(--color-text);
+}
+
+.location-search {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.location-search label {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.location-search-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.location-search-row input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-text-muted);
+  border-radius: 0.4rem;
+  padding: 0.5rem 0.7rem;
+}
+
+.location-results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.location-results button {
+  width: 100%;
+  text-align: left;
+}
+
+.location-message {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
 }
