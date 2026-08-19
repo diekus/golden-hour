@@ -3,7 +3,7 @@
   "name": "Golden Hour",
   "short_name": "Golden Hour",
   "description": "Instantly see if it's golden or blue hour where you are, with sunrise/sunset times and a weather-risk warning for photographers.",
-  "start_url": "/",
+  "start_url": "/golden-hour",
   "scope": "/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone"],
