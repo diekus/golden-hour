@@ -12,7 +12,7 @@ This describes **how** Golden Hour is built. It follows the project-wide web con
 ## Sun, golden hour, and blue hour calculation
 
 - Computed **entirely client-side** using astronomical formulas (sun position/altitude based on latitude, longitude, and date). This has no external dependency at runtime, works offline once loaded, and needs no API key or network call.
-- A small, dependency-free astronomical calculation utility (such as SunCalc, ISC-licensed, ~a few KB, no UI or framework surface) is the recommended way to avoid re-deriving solar position formulas from scratch. It is a calculation library, not a UI framework, so it doesn't conflict with the no-frameworks rule. If a truly zero-dependency approach is preferred later, the formulas can be vendored in directly. This is a phase-1 implementation decision, not one to overthink now.
+- A small, dependency-free astronomical calculation utility (such as SunCalc, BSD-2-Clause licensed, ~a few KB, no UI or framework surface) is the recommended way to avoid re-deriving solar position formulas from scratch. It is a calculation library, not a UI framework, so it doesn't conflict with the no-frameworks rule. If a truly zero-dependency approach is preferred later, the formulas can be vendored in directly. This is a phase-1 implementation decision, not one to overthink now.
 - Golden hour and blue hour windows are derived from standard solar elevation angle thresholds around sunrise and sunset.
 
 ## Location
@@ -79,4 +79,5 @@ Evaluated against the app's actual functionality:
 ## Open questions to resolve during roadmap phases
 
 - Exact colour palette values (golden/blue duotone direction is set in `BRAND_DESIGN.md`/brand direction, but hex values are still to be defined).
-- Final choice of sun-calculation approach: vendored library vs hand-rolled formulas.
+
+Resolved: sun-calculation approach — SunCalc (BSD-2-Clause) is vendored as ES module source under `js/vendor/`, loaded via `<script type="module">`, no build step. See `specs/2026-08-19-light-calculation/requirements.md`.

@@ -14,10 +14,27 @@
 <body>
   <header>
     <h1>Golden Hour</h1>
+    <p class="location-note">London, England, UK — fixed location for this preview</p>
   </header>
   <main>
-    <p>Golden Hour is getting ready.</p>
+    <section aria-labelledby="sun-heading">
+      <h2 id="sun-heading">Sun</h2>
+      <light-window-card id="card-sunrise"></light-window-card>
+      <light-window-card id="card-sunset"></light-window-card>
+    </section>
+
+    <section aria-labelledby="golden-heading">
+      <h2 id="golden-heading">Golden hour</h2>
+      <light-window-card id="card-golden-morning"></light-window-card>
+      <light-window-card id="card-golden-evening"></light-window-card>
+    </section>
+
+    <section aria-labelledby="blue-heading">
+      <h2 id="blue-heading">Blue hour</h2>
+      <light-window-card id="card-blue-morning"></light-window-card>
+      <light-window-card id="card-blue-evening"></light-window-card>
+    </section>
   </main>
-  <script src="js/app.js" defer></script>
+  <script type="module" src="js/app.js"></script>
 </body>
 </html>
