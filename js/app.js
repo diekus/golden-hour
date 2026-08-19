@@ -33,6 +33,7 @@ const els = {
   transitionSummary: document.getElementById('transition-summary'),
   weatherWarning: document.getElementById('weather-warning'),
   offlineIndicator: document.getElementById('offline-indicator'),
+  featuredSection: document.getElementById('featured-section'),
   popover: document.getElementById('transition-popover'),
   popoverClose: document.getElementById('transition-popover-close'),
   popoverTitle: document.getElementById('transition-popover-title'),
@@ -79,6 +80,15 @@ function windowCardData(label, accent, windowData, timezone) {
   };
 }
 
+// Preserves whatever `featured` state the card already had — updateFeaturedCard only re-applies
+// it when the *active card's identity* changes, so if this function's fresh windowCardData()
+// wiped it unconditionally, a still-featured card would lose its styling on any re-render
+// (e.g. a location switch) that doesn't happen to also change which window is active.
+function setWindowCard(id, label, accent, windowData, timezone) {
+  const card = document.getElementById(id);
+  card.data = { ...windowCardData(label, accent, windowData, timezone), featured: card.data?.featured };
+}
+
 function renderLightTimes() {
   const times = getLightTimes(currentLocation.lat, currentLocation.lng, new Date());
   const tz = currentLocation.timezone;
@@ -86,15 +96,10 @@ function renderLightTimes() {
   document.getElementById('card-sunrise').data = pointCardData('Sunrise', times.sunrise, tz);
   document.getElementById('card-sunset').data = pointCardData('Sunset', times.sunset, tz);
 
-  document.getElementById('card-golden-morning').data =
-    windowCardData('Golden hour — morning', 'golden', times.goldenHourMorning, tz);
-  document.getElementById('card-golden-evening').data =
-    windowCardData('Golden hour — evening', 'golden', times.goldenHourEvening, tz);
-
-  document.getElementById('card-blue-morning').data =
-    windowCardData('Blue hour — morning', 'blue', times.blueHourMorning, tz);
-  document.getElementById('card-blue-evening').data =
-    windowCardData('Blue hour — evening', 'blue', times.blueHourEvening, tz);
+  setWindowCard('card-golden-morning', 'Golden hour — morning', 'golden', times.goldenHourMorning, tz);
+  setWindowCard('card-golden-evening', 'Golden hour — evening', 'golden', times.goldenHourEvening, tz);
+  setWindowCard('card-blue-morning', 'Blue hour — morning', 'blue', times.blueHourMorning, tz);
+  setWindowCard('card-blue-evening', 'Blue hour — evening', 'blue', times.blueHourEvening, tz);
 
   return times;
 }
@@ -165,6 +170,58 @@ function resolveActiveWeatherWindow(transitionWindow) {
   const prefix = kind === 'gold' ? 'goldenHour' : 'blueHour';
   const suffix = direction === 'morning' ? 'Morning' : 'Evening';
   return `${prefix}${suffix}`;
+}
+
+const CARD_ID_BY_KIND_DIRECTION = {
+  gold: { morning: 'card-golden-morning', evening: 'card-golden-evening' },
+  blue: { morning: 'card-blue-morning', evening: 'card-blue-evening' },
+};
+
+// Strictly "happening right now", unlike resolveActiveWeatherWindow above which also covers
+// "waiting for the next one" — the featured card only surfaces while a golden/blue hour is
+// actually in progress, not during the run-up to it.
+function activeCardId(transitionWindow) {
+  if (!transitionWindow) return null;
+  const { currentKind, direction } = transitionWindow;
+  if (currentKind !== 'gold' && currentKind !== 'blue') return null;
+  return CARD_ID_BY_KIND_DIRECTION[currentKind][direction];
+}
+
+// Where each golden/blue-hour card normally lives, captured once at startup so it can be
+// moved back exactly where it came from when it's no longer the active one.
+const cardHome = {};
+for (const id of Object.values(CARD_ID_BY_KIND_DIRECTION).flatMap((byDirection) => Object.values(byDirection))) {
+  const el = document.getElementById(id);
+  cardHome[id] = { parent: el.parentElement, nextSibling: el.nextElementSibling };
+}
+
+let featuredCardId = null;
+
+// Physically relocates the currently-active card into #featured-section, right under the
+// diagram, with a strong colour fill (light-window-card's `featured` flag) — rather than
+// cloning/mirroring its data into a separate element, which would risk the two falling out of
+// sync. Moves it back to its original position the moment it stops being the active one.
+function updateFeaturedCard(transitionWindow) {
+  const nextId = activeCardId(transitionWindow);
+  if (nextId === featuredCardId) return;
+
+  if (featuredCardId) {
+    const prevEl = document.getElementById(featuredCardId);
+    const home = cardHome[featuredCardId];
+    home.parent.insertBefore(prevEl, home.nextSibling);
+    prevEl.data = { ...prevEl.data, featured: false };
+  }
+
+  featuredCardId = nextId;
+
+  if (featuredCardId) {
+    const el = document.getElementById(featuredCardId);
+    els.featuredSection.appendChild(el);
+    els.featuredSection.hidden = false;
+    el.data = { ...el.data, featured: true };
+  } else {
+    els.featuredSection.hidden = true;
+  }
 }
 
 const CLOUD_CAUTION = 40;
@@ -323,6 +380,7 @@ function renderTransition() {
   els.transitionSummary.textContent = formatSummary(transitionWindow, now);
   updateAmbient(transitionWindow);
   renderWeatherWarning(transitionWindow);
+  updateFeaturedCard(transitionWindow);
   renderLocationLabel(); // keeps the date correct across a midnight rollover in long-lived sessions
 }
 

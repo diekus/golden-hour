@@ -6,6 +6,18 @@
   --color-golden: #e8a33d;
   --color-blue: #6f95e0;
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  /* Deliberately fixed regardless of light/dark theme — the "featured" card is meant to read
+     as a spotlight, consistently vivid either way, not to blend with the ambient theme.
+     Chosen specifically for contrast: gold is light, so it pairs with dark text (~8.5:1); the
+     featured blue is a richer, darker blue than --color-blue so white text stays readable
+     (~8.3:1) even though --color-blue itself is too light for that in dark theme. */
+  --color-golden-featured-bg: #e8a33d;
+  --color-golden-featured-text: #14161a;
+  --color-golden-featured-text-muted: rgba(20, 22, 26, 0.75);
+  --color-blue-featured-bg: #2c4d8a;
+  --color-blue-featured-text: #f4f1ea;
+  --color-blue-featured-text-muted: rgba(244, 241, 234, 0.75);
 }
 
 @media (prefers-color-scheme: light) {
