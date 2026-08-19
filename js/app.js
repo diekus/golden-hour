@@ -46,6 +46,7 @@ const els = {
   offlineIndicator: document.getElementById('offline-indicator'),
   featuredSection: document.getElementById('featured-section'),
   notifyToggle: document.getElementById('notify-toggle'),
+  notifyToggleLabel: document.getElementById('notify-toggle-label'),
   notifyStatus: document.getElementById('notify-status'),
   shareToggle: document.getElementById('share-toggle'),
   popover: document.getElementById('transition-popover'),
@@ -416,7 +417,7 @@ function renderNotifyToggle() {
   els.notifyToggle.hidden = false;
   els.notifyToggle.disabled = permission === 'denied';
   els.notifyToggle.setAttribute('aria-pressed', String(optedIn));
-  els.notifyToggle.textContent = optedIn ? 'Notifications on' : 'Notify me when golden hour starts';
+  els.notifyToggleLabel.textContent = optedIn ? 'Notifications on' : 'Notify me when golden hour starts';
 
   const statusText = permission === 'denied' ? NOTIFY_STATUS_MESSAGE.denied : optedIn ? NOTIFY_STATUS_MESSAGE.on : '';
   els.notifyStatus.textContent = statusText;
