@@ -11,6 +11,15 @@ import {
   searchLocations,
   toLocation,
 } from './location.js';
+import {
+  isSupported as notificationsSupported,
+  getOptIn as getNotifyOptIn,
+  setOptIn as setNotifyOptIn,
+  getPermission as getNotifyPermission,
+  requestPermission as requestNotifyPermission,
+  scheduleNext as scheduleNextNotification,
+  cancelScheduled as cancelScheduledNotification,
+} from './notifications.js';
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -34,6 +43,8 @@ const els = {
   weatherWarning: document.getElementById('weather-warning'),
   offlineIndicator: document.getElementById('offline-indicator'),
   featuredSection: document.getElementById('featured-section'),
+  notifyToggle: document.getElementById('notify-toggle'),
+  notifyStatus: document.getElementById('notify-status'),
   popover: document.getElementById('transition-popover'),
   popoverClose: document.getElementById('transition-popover-close'),
   popoverTitle: document.getElementById('transition-popover-title'),
@@ -372,6 +383,62 @@ function updateAmbient(transitionWindow) {
   }
 }
 
+const NOTIFY_STATUS_MESSAGE = {
+  denied: 'Notifications are blocked for this site. Enable them in your browser settings to use this.',
+  on: "You'll get a notification when golden hour starts — only while this app stays open.",
+};
+
+// Reflects current permission/opt-in state into the toggle — called after every state change,
+// not just once, since permission can also change outside our own click handler (e.g. the user
+// revokes it from browser settings between visits).
+function renderNotifyToggle() {
+  if (!notificationsSupported()) {
+    els.notifyToggle.hidden = true;
+    els.notifyStatus.hidden = true;
+    return;
+  }
+
+  const permission = getNotifyPermission();
+  const optedIn = getNotifyOptIn() && permission === 'granted';
+
+  els.notifyToggle.hidden = false;
+  els.notifyToggle.disabled = permission === 'denied';
+  els.notifyToggle.setAttribute('aria-pressed', String(optedIn));
+  els.notifyToggle.textContent = optedIn ? 'Notifications on' : 'Notify me when golden hour starts';
+
+  const statusText = permission === 'denied' ? NOTIFY_STATUS_MESSAGE.denied : optedIn ? NOTIFY_STATUS_MESSAGE.on : '';
+  els.notifyStatus.textContent = statusText;
+  els.notifyStatus.hidden = !statusText;
+}
+
+async function toggleNotifications() {
+  const permission = getNotifyPermission();
+
+  if (permission === 'denied') {
+    renderNotifyToggle();
+    return;
+  }
+
+  if (permission === 'default') {
+    const result = await requestNotifyPermission();
+    setNotifyOptIn(result === 'granted');
+    if (result === 'granted') scheduleNextNotification(currentLocation);
+    renderNotifyToggle();
+    return;
+  }
+
+  const nextOptIn = !getNotifyOptIn();
+  setNotifyOptIn(nextOptIn);
+  if (nextOptIn) {
+    scheduleNextNotification(currentLocation);
+  } else {
+    cancelScheduledNotification();
+  }
+  renderNotifyToggle();
+}
+
+els.notifyToggle.addEventListener('click', toggleNotifications);
+
 function renderTransition() {
   hidePopover();
   const now = new Date();
@@ -394,6 +461,9 @@ function setLocation(location) {
   showMessage('');
   clearResults();
   els.locationDetails.open = false;
+  if (getNotifyOptIn() && getNotifyPermission() === 'granted') {
+    scheduleNextNotification(currentLocation);
+  }
 }
 
 function renderResults(results) {
@@ -467,6 +537,11 @@ function updateOnlineStatus() {
 window.addEventListener('online', updateOnlineStatus);
 window.addEventListener('offline', updateOnlineStatus);
 updateOnlineStatus();
+
+renderNotifyToggle();
+if (getNotifyOptIn() && getNotifyPermission() === 'granted') {
+  scheduleNextNotification(currentLocation);
+}
 
 const initialTimes = renderLightTimes();
 renderWeather(initialTimes, currentLocation);

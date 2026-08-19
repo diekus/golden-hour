@@ -110,3 +110,33 @@ export function getTransitionWindow(lat, lng, now = new Date()) {
     sunEvent: combined.sunEvent,
   };
 }
+
+// Golden hour always starts at combined.start when it's the first of the pair (evening: gold
+// then blue) and at combined.transition when it's the second (morning: blue then gold).
+function goldenHourStartOf(combined) {
+  if (!combined) return null;
+  return combined.firstKind === 'gold' ? combined.start : combined.transition;
+}
+
+// Returns the next upcoming golden-hour-start instant (morning or evening, whichever is
+// sooner) as { time, direction }, or null if none can be found within a few days — e.g. the
+// same polar day/night edge cases getTransitionWindow already treats as out of scope. Pure
+// function: no DOM/localStorage access, so it's directly testable and safe to call from a
+// notification-scheduling module.
+export function getNextGoldenHourStart(lat, lng, now = new Date()) {
+  for (const offsetHours of [0, 24, 48]) {
+    const at = new Date(now.getTime() + offsetHours * 60 * 60 * 1000);
+    const { morning, evening } = combinedWindows(getLightTimes(lat, lng, at));
+
+    const candidates = [
+      morning ? { time: goldenHourStartOf(morning), direction: 'morning' } : null,
+      evening ? { time: goldenHourStartOf(evening), direction: 'evening' } : null,
+    ].filter((candidate) => candidate && candidate.time > now);
+
+    if (candidates.length > 0) {
+      candidates.sort((a, b) => a.time.getTime() - b.time.getTime());
+      return candidates[0];
+    }
+  }
+  return null;
+}

@@ -198,6 +198,35 @@ main section h2 {
   font-weight: 600;
 }
 
+.notify-toggle {
+  align-self: center;
+  font-size: 0.85rem;
+  padding: 0.4rem 0.8rem;
+}
+
+/* Filled, not just outlined — gold text/border on the light-theme white surface only reaches
+   ~2.25:1 contrast, under WCAG AA's 3:1 minimum for UI component boundaries. Reusing the
+   featured-card's gold pairing (already verified ~8.45:1 dark-on-gold) sidesteps that instead
+   of inventing a new low-contrast combination. */
+.notify-toggle[aria-pressed="true"] {
+  background: var(--color-golden-featured-bg);
+  border-color: var(--color-golden-featured-bg);
+  color: var(--color-golden-featured-text);
+  box-shadow: 0 0.2rem 0.6rem rgba(0, 0, 0, 0.18);
+}
+
+.notify-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.notify-status {
+  margin: 0;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
 .transition-label {
   fill: var(--color-text-muted);
   font-family: var(--font-sans);
