@@ -93,6 +93,13 @@ function pointCardData(label, pointReading, timezone) {
   return { label, accent: 'neutral', start: pointReading, end: null, durationMs: null, timezone };
 }
 
+// Just the place name (e.g. "London" out of "London, England, UK") — the badge sits right
+// above the location card, which already spells out the full "City, Region, Country" label,
+// so repeating all of it here would be redundant.
+function shortLocationLabel(label) {
+  return label.split(',')[0].trim();
+}
+
 function windowCardData(label, accent, windowData, timezone) {
   return {
     label,
@@ -101,7 +108,7 @@ function windowCardData(label, accent, windowData, timezone) {
     end: windowData.end,
     durationMs: windowData.durationMs,
     timezone,
-    locationLabel: currentLocation.label,
+    locationLabel: shortLocationLabel(currentLocation.label),
   };
 }
 
