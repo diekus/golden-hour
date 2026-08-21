@@ -20,6 +20,13 @@ function formatTime(date, timezone) {
   return date ? timeFormatter(timezone).format(date) : '--:--';
 }
 
+const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+// locationLabel ultimately comes from a shared link's `label` query param (js/location.js), so
+// it's attacker-influenceable text landing in this component's innerHTML — must be escaped.
+function escapeHtml(text) {
+  return String(text).replace(/[&<>"']/g, (char) => HTML_ESCAPES[char]);
+}
+
 function formatReading(reading) {
   if (!reading) return '';
   return `${Math.round(reading.azimuth)}° ${reading.azimuthLabel}, ${Math.round(reading.altitude)}°`;
@@ -285,7 +292,7 @@ class LightWindowCard extends HTMLElement {
     const compassWasOpen = Boolean(previousDetails?.open);
     this._stopLiveHeading();
 
-    const { label, accent = 'neutral', start, end, durationMs, timezone, weather, featured } = this._data;
+    const { label, accent = 'neutral', start, end, durationMs, timezone, weather, featured, locationLabel } = this._data;
     const accentColor = ACCENT_VAR[accent] || ACCENT_VAR.neutral;
     const weatherMarkup = weather ? `<p class="weather">${formatWeather(weather)}</p>` : '';
 
@@ -307,7 +314,9 @@ class LightWindowCard extends HTMLElement {
     const cardShadow = isFeatured ? 'var(--shadow-md)' : 'var(--shadow-sm)';
     const textColor = isFeatured ? FEATURED_TEXT_VAR[accent] : 'var(--color-text)';
     const mutedColor = isFeatured ? FEATURED_MUTED_VAR[accent] : 'var(--color-text-muted)';
-    const badgeMarkup = isFeatured ? '<p class="badge">Happening now</p>' : '';
+    const badgeMarkup = isFeatured
+      ? `<p class="badge">Happening now${locationLabel ? `<span class="badge-location"> · ${escapeHtml(locationLabel)}</span>` : ''}</p>`
+      : '';
     // The featured background *is* the accent colour (--color-golden-featured-bg equals
     // --color-golden), so painting the compass arrows/icon in accentColor makes them vanish
     // against an active card. Use the featured text colour there instead, which is already
@@ -359,6 +368,11 @@ class LightWindowCard extends HTMLElement {
           text-transform: uppercase;
           color: ${textColor};
           opacity: 0.85;
+        }
+        .badge-location {
+          font-weight: 500;
+          letter-spacing: normal;
+          text-transform: none;
         }
         h3 {
           margin: 0 0 0.4rem;

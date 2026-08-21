@@ -101,6 +101,7 @@ function windowCardData(label, accent, windowData, timezone) {
     end: windowData.end,
     durationMs: windowData.durationMs,
     timezone,
+    locationLabel: currentLocation.label,
   };
 }
 
