@@ -308,6 +308,11 @@ class LightWindowCard extends HTMLElement {
     const textColor = isFeatured ? FEATURED_TEXT_VAR[accent] : 'var(--color-text)';
     const mutedColor = isFeatured ? FEATURED_MUTED_VAR[accent] : 'var(--color-text-muted)';
     const badgeMarkup = isFeatured ? '<p class="badge">Happening now</p>' : '';
+    // The featured background *is* the accent colour (--color-golden-featured-bg equals
+    // --color-golden), so painting the compass arrows/icon in accentColor makes them vanish
+    // against an active card. Use the featured text colour there instead, which is already
+    // chosen for contrast against that background.
+    const compassAccentColor = isFeatured ? textColor : accentColor;
 
     const hasCompass = hasCompassData(accent, start, end);
     const compassSectionMarkup = hasCompass ? compassMarkup(start, end) : '';
@@ -422,7 +427,7 @@ class LightWindowCard extends HTMLElement {
         }
         .compass-toggle-icon {
           flex-shrink: 0;
-          color: ${accentColor};
+          color: ${compassAccentColor};
         }
         .compass-chevron {
           margin-left: auto;
@@ -501,12 +506,12 @@ class LightWindowCard extends HTMLElement {
         }
         .compass-arrow--start {
           fill: none;
-          stroke: ${accentColor};
+          stroke: ${compassAccentColor};
           stroke-width: 1.6;
         }
         .compass-arrow--end {
-          fill: ${accentColor};
-          stroke: ${accentColor};
+          fill: ${compassAccentColor};
+          stroke: ${compassAccentColor};
           stroke-width: 1.6;
         }
         .compass-readout,
