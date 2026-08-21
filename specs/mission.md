@@ -17,7 +17,7 @@ Photographers plan their shoots around light, not the clock. The golden and blue
 
 - General-purpose weather apps that bury sunrise/sunset in a forecast, with no golden/blue hour concept at all.
 - Dedicated golden hour calculators that show times but ignore whether the sky will actually cooperate.
-- Feature-heavy planning apps (compass overlays, augmented reality, multi-day trip planning) that are overkill for the simple question of "should I go out and shoot right now, or in the next hour?"
+- Feature-heavy planning apps (compass overlays, augmented reality, multi-day trip planning) that are overkill for the simple question of "should I go out and shoot right now, or in the next hour?" (Phase 12 adds a lightweight, opt-in exception to this: a compass tucked inside the existing golden/blue hour cards, reusing data already computed for those cards, expanded on demand rather than shown by default — a glance-based direction reference, not a persistent AR overlay or a separate planning surface.)
 
 Golden Hour exists to close that gap: combine precise light-timing with a plain-language weather risk warning, in a tool fast enough to check in the field, on a phone, possibly with poor signal.
 

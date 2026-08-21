@@ -37,3 +37,6 @@ WCAG compliance pass: contrast testing, keyboard navigation, screen-reader label
 
 ## Phase 11 — Visual & brand polish
 Final colour palette (golden/blue duotone hex values), animations and transitions between light states, overall interaction polish per `BRAND_DESIGN.md`.
+
+## Phase 12 — Compass
+An expandable compass view on each golden/blue hour card, showing where the light will fall (sun azimuth at window start and end) so a photographer can pre-plan where to stand/point the camera before the window opens. Static azimuth-only rose on desktop; live device-heading rotation on mobile where `DeviceOrientationEvent` is available, falling back to static otherwise.

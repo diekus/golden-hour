@@ -1,4 +1,4 @@
-const CACHE_NAME = 'golden-hour-shell-v26';
+const CACHE_NAME = 'golden-hour-shell-v27';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -12,6 +12,7 @@ const APP_SHELL = [
   '/js/weather.js',
   '/js/notifications.js',
   '/js/share.js',
+  '/js/compass.js',
   '/js/vendor/suncalc.js',
   '/js/components/light-window-card.js',
   '/manifest.webmanifest',

@@ -36,6 +36,15 @@ Golden Hour can notify the user when golden/blue hour starts or ends, within the
 - **No push server.** This deliberately avoids introducing a backend or the Push API; the trade-off is accepted background-notification unreliability rather than added infrastructure. If guaranteed background delivery becomes a hard requirement later, that would mean revisiting the no-backend principle above.
 - The UI must make the limitation clear (e.g. "background notifications are best-effort and may not fire exactly on time, or at all, on this browser"), so users aren't misled into relying on it for a shoot they can't afford to miss.
 
+## Compass (device orientation)
+
+Phase 12 adds an expandable compass to each golden/blue hour card, showing the sun's azimuth at the window's start and end (already computed per-reading in `js/light-times.js`, no new calculation needed) so a photographer can plan where to point the camera before the window opens.
+
+- **Baseline (all platforms): static rose.** A fixed compass rose (N at top) with two arrows marking the start/end azimuths, plus their angle labels. No sensors, no permissions, works identically offline and on desktop.
+- **Enhancement (mobile with sensor support): live device heading.** Where `DeviceOrientationEvent` (absolute heading, or `webkitCompassHeading` on iOS Safari) is available, the rose itself rotates opposite the device's heading so the arrows read as "this is the direction to point your phone", updated live. iOS Safari requires an explicit user gesture to call `DeviceOrientationEvent.requestPermission()`; this is requested only when the user opts to expand a card's compass (not on load), consistent with the notifications permission precedent in Phase 7.
+- **Feature detection, not UA sniffing.** Absence of `DeviceOrientationEvent`, a denied/unavailable permission, or no `deviceorientation` events actually arriving within a short timeout all fall back to the static rose — same as any other graceful-degradation path in this app.
+- **No new dependency.** Rendered as inline SVG, consistent with `js/transition-diagram.js`'s approach, not a canvas/WebGL/charting library.
+
 ## PWA requirements (non-negotiable, per `prompts/pwa.md`)
 
 - Web app manifest with `name`, `short_name`, and icons.
