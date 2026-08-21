@@ -27,6 +27,15 @@
      the popover, and buttons instead of each surface inventing its own box-shadow values. */
   --shadow-sm: 0 0.2rem 0.6rem rgba(0, 0, 0, 0.18);
   --shadow-md: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.22);
+
+  /* Button surface treatment — a shallow top-to-bottom gradient plus a paired inset
+     highlight/shade reads as a physically raised, pressable surface instead of a flat outline.
+     --button-shadow-rest is the resting bevel (light rim top, shaded edge bottom); on :active it
+     swaps for --button-shadow-pressed, a deeper, top-only inner shadow with the outer
+     --shadow-sm/--shadow-md dropped, so the button visibly pushes in rather than just recolouring. */
+  --button-gradient: linear-gradient(to bottom, rgba(255, 255, 255, 0.07), rgba(0, 0, 0, 0.15));
+  --button-shadow-rest: inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 -2px 3px rgba(0, 0, 0, 0.25);
+  --button-shadow-pressed: inset 0 2px 4px rgba(0, 0, 0, 0.4), inset 0 -1px 0 rgba(255, 255, 255, 0.03);
 }
 
 @media (prefers-color-scheme: light) {
@@ -42,6 +51,12 @@
        light mode. */
     --shadow-sm: 0 0.2rem 0.6rem rgba(20, 22, 26, 0.1);
     --shadow-md: 0 0.5rem 1.5rem rgba(20, 22, 26, 0.14);
+    /* Same bevel idea against a white surface: the top highlight is now the shaded side (near-
+       invisible on white) and the bottom edge does the work of separating the button from the
+       page. */
+    --button-gradient: linear-gradient(to bottom, rgba(255, 255, 255, 0.9), rgba(20, 22, 26, 0.05));
+    --button-shadow-rest: inset 0 1px 0 rgba(255, 255, 255, 0.8), inset 0 -1px 2px rgba(20, 22, 26, 0.12);
+    --button-shadow-pressed: inset 0 2px 4px rgba(20, 22, 26, 0.2), inset 0 -1px 0 rgba(255, 255, 255, 0.5);
   }
 }
 
@@ -193,9 +208,9 @@ main {
   gap: 2rem;
 }
 
-/* A modest widening for tablet/desktop viewports — not a structural column reflow (that's
-   Phase 11's territory), just a more generous reading measure than the mobile-first 36rem once
-   there's clearly room for it. */
+/* A modest widening for tablet viewports — just a more generous reading measure than the
+   mobile-first 36rem once there's clearly room for it. The full multi-column reflow only kicks
+   in at the wider desktop breakpoint below. */
 @media (min-width: 48rem) {
   main {
     max-width: 42rem;
@@ -203,6 +218,39 @@ main {
 
   .transition-diagram {
     max-width: 26rem;
+  }
+}
+
+/* Same stack as the single-column layout — a div, not a section, since it's a layout grouping
+   with no heading of its own; the three sections inside keep their own headings and semantics. */
+.windows-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Desktop: the hero/location content above stays at the same 42rem reading measure (so it
+   doesn't stretch into an awkwardly wide strip), while the Sun/Golden hour/Blue hour sections —
+   three parallel, same-shape groups — spread into real columns instead of just growing taller. */
+@media (min-width: 64rem) {
+  main {
+    max-width: 68rem;
+  }
+
+  #transition-section,
+  #featured-section,
+  #location-section {
+    max-width: 42rem;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .windows-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    align-items: start;
+    gap: 1.5rem;
   }
 }
 
@@ -315,10 +363,10 @@ main section h2 {
    featured-card's gold pairing (already verified ~8.45:1 dark-on-gold) sidesteps that instead
    of inventing a new low-contrast combination. */
 .notify-toggle[aria-pressed="true"] {
-  background: var(--color-golden-featured-bg);
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.2), rgba(0, 0, 0, 0.1)), var(--color-golden-featured-bg);
   border-color: var(--color-golden-featured-bg);
   color: var(--color-golden-featured-text);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--button-shadow-pressed);
 }
 
 .notify-toggle:disabled {
@@ -417,6 +465,8 @@ main section h2 {
   }
 }
 
+/* A dismiss icon, not a primary action — exempt from the raised button treatment below so it
+   stays a plain glyph rather than gaining a bevel with no visible surface to bevel. */
 .transition-popover-close {
   position: absolute;
   top: 0.25rem;
@@ -426,6 +476,13 @@ main section h2 {
   padding: 0.25rem 0.5rem;
   font-size: 1.1rem;
   line-height: 1;
+}
+
+.transition-popover-close,
+.transition-popover-close:hover,
+.transition-popover-close:active {
+  box-shadow: none;
+  transform: none;
 }
 
 .transition-popover-title {
@@ -455,7 +512,7 @@ main section h2 {
 
 .location-card {
   border: 1px solid var(--color-text-muted);
-  border-radius: 0.5rem;
+  border-radius: 0.85rem;
   background: var(--color-surface);
   box-shadow: var(--shadow-sm);
 }
@@ -548,18 +605,31 @@ main section h2 {
 button {
   font: inherit;
   color: var(--color-text);
-  background: var(--color-surface);
+  background: var(--button-gradient), var(--color-surface);
   border: 1px solid var(--color-text-muted);
-  border-radius: 0.4rem;
+  border-radius: 0.65rem;
   padding: 0.5rem 0.9rem;
   cursor: pointer;
-  box-shadow: var(--shadow-sm);
-  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+  box-shadow: var(--shadow-sm), var(--button-shadow-rest);
+  transition: box-shadow 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
 }
 
 button:hover {
   border-color: var(--color-text);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-md), var(--button-shadow-rest);
+}
+
+/* Pushed-in feedback: drop the outer elevation entirely and deepen the inset so the surface
+   reads as pressed rather than just darker, with a 1px nudge to sell the motion. */
+button:active {
+  box-shadow: var(--button-shadow-pressed);
+  transform: translateY(1px);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

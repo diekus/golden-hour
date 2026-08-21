@@ -357,7 +357,7 @@ class LightWindowCard extends HTMLElement {
           border-left: ${cardBorder};
           ${cardBackground}
           box-shadow: ${cardShadow};
-          border-radius: 0.5rem;
+          border-radius: 0.85rem;
           padding: 0.75rem 1rem;
         }
         .badge {

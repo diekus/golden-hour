@@ -116,12 +116,36 @@ function segmentMarkup(segment, index, windowStart, totalMs, interactive) {
     ? `tabindex="0" role="button" aria-label="${KIND_LABEL[segment.kind]} details" data-segment-index="${index}" class="transition-segment transition-segment--interactive"`
     : 'aria-hidden="true" class="transition-segment"';
 
-  // Both segments render as a solid stroke. An earlier dashed pattern on the blue segment
-  // (for WCAG 1.4.1, not distinguishing gold/blue by colour alone) rendered as overlapping
-  // rounded blobs rather than a clean line at this stroke width, so it was dropped in favour of
-  // the non-colour information that already exists nearby: each segment's own aria-label, the
-  // boundary time labels on the arc, and the plain-text summary below it.
-  return `<path d="${d}" fill="none" stroke="${KIND_COLOR_VAR[segment.kind]}" stroke-width="${STROKE_WIDTH}" stroke-linecap="round" ${attrs} />`;
+  // Both segments render as a stroke, now a light-to-dark gradient (see gradientDefsMarkup)
+  // rather than a flat fill, for the same raised, physical quality as the button/card surfaces
+  // elsewhere. An earlier dashed pattern on the blue segment (for WCAG 1.4.1, not distinguishing
+  // gold/blue by colour alone) rendered as overlapping rounded blobs rather than a clean line at
+  // this stroke width, so it was dropped in favour of the non-colour information that already
+  // exists nearby: each segment's own aria-label, the boundary time labels on the arc, and the
+  // plain-text summary below it.
+  return `<path d="${d}" fill="none" stroke="url(#segment-gradient-${segment.kind})" stroke-width="${STROKE_WIDTH}" stroke-linecap="round" ${attrs} />`;
+}
+
+// One shared gradient per segment kind, spanning the full viewBox width in flat (userSpaceOnUse)
+// coordinates rather than each segment's own bounding box — so a gold or blue segment reads as a
+// window onto one continuous light-(left)-to-dark-(right) sweep across the whole arc, instead of
+// each segment separately fading light-to-dark over its own, much shorter span. Each stop lists
+// its flat colour first and a color-mix() tint second: a browser without color-mix() support
+// simply fails to parse the second (invalid) declaration and keeps the first, landing back on
+// today's flat colour — the same fallback technique js/components/light-window-card.js uses for
+// its featured-card background gradient.
+function gradientDefsMarkup() {
+  const gradients = Object.entries(KIND_COLOR_VAR)
+    .map(
+      ([kind, colorVar]) => `
+        <linearGradient id="segment-gradient-${kind}" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="${VIEW_WIDTH}" y2="0">
+          <stop offset="0%" style="stop-color: ${colorVar}; stop-color: color-mix(in srgb, white 28%, ${colorVar});" />
+          <stop offset="100%" style="stop-color: ${colorVar}; stop-color: color-mix(in srgb, black 18%, ${colorVar});" />
+        </linearGradient>
+      `,
+    )
+    .join('');
+  return `<defs>${gradients}</defs>`;
 }
 
 // Tracks, per container, which combined window was last rendered and a reference to its marker
@@ -175,6 +199,7 @@ export function renderTransitionDiagram(container, transitionWindow, timezone, o
 
   container.innerHTML = `
     <svg viewBox="0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}" class="transition-svg">
+      ${gradientDefsMarkup()}
       ${segmentsMarkup}
       ${sunEventMarkup(transitionWindow)}
       ${labelsMarkup}
