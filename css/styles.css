@@ -695,3 +695,7 @@ footer p {
   font-size: 0.8rem;
   color: var(--color-text-muted);
 }
+
+footer a {
+  color: var(--color-text-muted);
+}

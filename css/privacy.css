@@ -1,0 +1,51 @@
+.policy {
+  line-height: 1.6;
+}
+
+.policy-back {
+  margin: 0 0 1rem;
+}
+
+.policy-back a {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.policy-back a:hover,
+.policy-back a:focus-visible {
+  text-decoration: underline;
+}
+
+.policy-updated {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  margin: 0 0 1.5rem;
+}
+
+.policy h2 {
+  font-size: 1.1rem;
+  margin: 1.75rem 0 0.5rem;
+}
+
+.policy h2.policy-title {
+  font-size: 1.5rem;
+  margin: 0 0 0.3rem;
+}
+
+.policy p,
+.policy ul {
+  margin: 0 0 1rem;
+}
+
+.policy ul {
+  padding-left: 1.3rem;
+}
+
+.policy li {
+  margin-bottom: 0.4rem;
+}
+
+.policy a {
+  color: var(--color-golden);
+}
