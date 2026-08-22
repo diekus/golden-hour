@@ -29,5 +29,28 @@
       "type": "image/png",
       "purpose": "maskable"
     }
+  ],
+  "screenshots" : [
+    {
+      "src": "images/ss/ss1.jpg",
+      "sizes": "1280x720",
+      "type": "image/jpg",
+      "form_factor": "wide",
+      "platform": "windows"
+    },
+    {
+      "src": "images/ss/ss2.jpg",
+      "sizes": "1280x720",
+      "type": "image/jpg",
+      "form_factor": "wide",
+      "platform": "windows"
+    },
+    {
+      "src": "images/ss/ss3.jpg",
+      "sizes": "1280x720",
+      "type": "image/jpg",
+      "form_factor": "narrow",
+      "platform": "android"
+    }
   ]
 }
