@@ -1,0 +1,11 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "us.diek.goldenhour",
+      "sha256_cert_fingerprints":
+        ["C1:61:63:6A:0A:51:ED:BF:1F:54:93:34:34:F4:AA:7E:79:A7:4A:B4:4E:F5:1E:56:1B:52:C1:BE:1A:D4:42:48"]
+    }
+  }
+]
